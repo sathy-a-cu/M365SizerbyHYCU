@@ -1,0 +1,70 @@
+PS C:\HYCU-M365Sizer> .\Get-HYCUM365SizingInfo.ps1
+
+[2024-01-15 14:30:15] [INFO] Starting HYCU M365 Sizing Tool v1.0
+[2024-01-15 14:30:15] [INFO] =====================================
+[2024-01-15 14:30:15] [INFO] Checking for required PowerShell modules...
+[2024-01-15 14:30:16] [SUCCESS] Microsoft.Graph.Reports is already installed
+[2024-01-15 14:30:16] [SUCCESS] Microsoft.Graph.Users is already installed
+[2024-01-15 14:30:16] [SUCCESS] Microsoft.Graph.Groups is already installed
+[2024-01-15 14:30:16] [SUCCESS] Microsoft.Graph.Teams is already installed
+[2024-01-15 14:30:16] [SUCCESS] Microsoft.Graph.Sites is already installed
+[2024-01-15 14:30:16] [SUCCESS] ExchangeOnlineManagement is already installed
+[2024-01-15 14:30:16] [INFO] Authenticating to Microsoft Graph API...
+[2024-01-15 14:30:18] [SUCCESS] Connected using interactive authentication
+[2024-01-15 14:30:18] [INFO] Gathering tenant information...
+[2024-01-15 14:30:19] [SUCCESS] Tenant: Contoso Corporation
+[2024-01-15 14:30:19] [INFO] Gathering user statistics...
+[2024-01-15 14:30:20] [SUCCESS] Total Users: 2,847 (Enabled: 2,634, Guests: 213)
+[2024-01-15 14:30:20] [INFO] Gathering Exchange Online usage data...
+[2024-01-15 14:30:22] [SUCCESS] Exchange: 1,247.3 GB across 2,634 mailboxes
+[2024-01-15 14:30:22] [INFO] Gathering OneDrive usage data...
+[2024-01-15 14:30:25] [SUCCESS] OneDrive: 3,892.7 GB across 2,634 accounts
+[2024-01-15 14:30:25] [INFO] Gathering SharePoint usage data...
+[2024-01-15 14:30:28] [SUCCESS] SharePoint: 1,456.2 GB across 1,247 sites
+[2024-01-15 14:30:28] [INFO] Gathering Microsoft Teams usage data...
+[2024-01-15 14:30:30] [SUCCESS] Teams: 187 teams with 1,247 channels
+[2024-01-15 14:30:30] [INFO] Calculating growth analysis...
+[2024-01-15 14:30:30] [SUCCESS] Current total size: 6,596.2 GB
+[2024-01-15 14:30:30] [INFO] Generating backup recommendations...
+[2024-01-15 14:30:30] [SUCCESS] Backup recommendations generated
+[2024-01-15 14:30:30] [INFO] Generating cost analysis...
+[2024-01-15 14:30:30] [SUCCESS] Cost analysis completed
+[2024-01-15 14:30:30] [INFO] Generating HTML report...
+[2024-01-15 14:30:33] [SUCCESS] Report generated: .\HYCU-M365-Sizing-2024-01-15-1430.html
+[2024-01-15 14:30:33] [INFO] =====================================
+[2024-01-15 14:30:33] [SUCCESS] Analysis completed successfully!
+[2024-01-15 14:30:33] [INFO] Duration: 0.30 minutes
+[2024-01-15 14:30:33] [SUCCESS] Report saved to: .\HYCU-M365-Sizing-2024-01-15-1430.html
+[2024-01-15 14:30:33] [INFO] =====================================
+[2024-01-15 14:30:33] [INFO] Disconnected from Microsoft Graph
+
+PS C:\HYCU-M365Sizer> .\Get-HYCUBackupRecommendations.ps1 -TenantData $sizingData -BusinessCriticality "High" -ComplianceRequirements "GDPR"
+
+[2024-01-15 14:35:15] [INFO] Generating HYCU Backup Recommendations...
+[2024-01-15 14:35:15] [INFO] =========================================
+
+Backup Recommendations Generated:
+Business Criticality: High
+Compliance Requirements: GDPR
+RTO: 4 hours
+RPO: 1 hour
+Backup Frequency: Every 2 hours
+
+[2024-01-15 14:35:18] [SUCCESS] Recommendations saved to: .\HYCU-Backup-Recommendations-2024-01-15-1435.json
+[2024-01-15 14:35:18] [INFO] =========================================
+
+PS C:\HYCU-M365Sizer> .\Get-HYCUCostOptimizer.ps1 -TenantData $sizingData -TargetBudget 50000 -OptimizationLevel "Moderate" -IncludeROI
+
+[2024-01-15 14:40:15] [INFO] Starting HYCU Cost Optimizer Analysis...
+[2024-01-15 14:40:15] [INFO] ========================================
+
+Cost Optimization Analysis Complete:
+Current Annual Cost: $71,131.44
+Optimized Annual Cost: $7,361.28
+Annual Savings: $63,770.16
+ROI: 1275.4%
+Payback Period: 0.1 years
+Budget Status: Within target budget
+
+[2024-01-15 14:40:33] [SUCCESS] Optimization report saved to: .\HYCU-Cost-Optimization-2024-01-15-1440.json
+[2024-01-15 14:40:33] [INFO] ========================================

@@ -1,0 +1,96 @@
+{
+  "CurrentCosts": {
+    "MonthlyStorageCost": 659.62,
+    "MonthlyUserCost": 5268.00,
+    "MonthlyTotal": 5927.62,
+    "AnnualTotal": 71131.44,
+    "CostPerGB": 0.12,
+    "CostPerUser": 3.00
+  },
+  "TieringOptimization": {
+    "TierBreakdown": {
+      "Hot": {
+        "SizeGB": 2638.48,
+        "Cost": 395.77,
+        "Percentage": 40,
+        "Description": "Frequently accessed data"
+      },
+      "Cool": {
+        "SizeGB": 2308.67,
+        "Cost": 184.69,
+        "Percentage": 35,
+        "Description": "Infrequently accessed data"
+      },
+      "Archive": {
+        "SizeGB": 1649.05,
+        "Cost": 32.98,
+        "Percentage": 25,
+        "Description": "Long-term archival data"
+      }
+    },
+    "OptimizedMonthlyCost": 613.44,
+    "OptimizedAnnualCost": 7361.28
+  },
+  "RetentionOptimization": {
+    "RetentionPolicies": {
+      "Exchange": "5 years",
+      "OneDrive": "3 years",
+      "SharePoint": "5 years",
+      "Teams": "2 years",
+      "Description": "Balanced retention policy"
+    },
+    "StorageReductionGB": 1649.05,
+    "ReducedSizeGB": 4947.15,
+    "ReductionPercentage": 25.0
+  },
+  "CompressionOptimization": {
+    "CompressionRatio": 0.30,
+    "CompressedSizeGB": 1978.86,
+    "CompressionSavingsGB": 4617.34,
+    "SavingsPercentage": 70.0
+  },
+  "OptimizedCosts": {
+    "OptimizedAnnualCost": 7361.28,
+    "StorageReductionGB": 1649.05,
+    "CompressionSavingsGB": 4617.34
+  },
+  "ROIAnalysis": {
+    "AnnualSavings": 63770.16,
+    "ROIPercentage": 1275.4,
+    "PaybackPeriodYears": 0.1,
+    "ImplementationCost": 5000
+  },
+  "Recommendations": [
+    {
+      "Category": "Storage Tiering",
+      "Priority": "High",
+      "Description": "Implement intelligent storage tiering to move infrequently accessed data to lower-cost tiers",
+      "PotentialSavings": "20-40%",
+      "ImplementationEffort": "Medium"
+    },
+    {
+      "Category": "Data Compression",
+      "Priority": "High",
+      "Description": "Enable advanced compression and deduplication to reduce storage footprint",
+      "PotentialSavings": "60-80%",
+      "ImplementationEffort": "Low"
+    },
+    {
+      "Category": "Retention Policy",
+      "Priority": "Medium",
+      "Description": "Optimize retention policies based on compliance requirements",
+      "PotentialSavings": "20-30%",
+      "ImplementationEffort": "Medium"
+    },
+    {
+      "Category": "Backup Frequency",
+      "Priority": "Low",
+      "Description": "Optimize backup frequency based on data criticality and change rates",
+      "PotentialSavings": "10-20%",
+      "ImplementationEffort": "Low"
+    }
+  ],
+  "TargetBudget": 50000,
+  "BudgetCompliance": true,
+  "GeneratedOn": "2024-01-15T14:40:33Z"
+}

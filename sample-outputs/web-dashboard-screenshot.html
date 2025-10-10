@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYCU M365 Sizing Dashboard - Sample</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); text-align: center; }
+        .header h1 { font-size: 3em; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; margin-bottom: 30px; }
+        .card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
+        .card-header { display: flex; align-items: center; margin-bottom: 20px; }
+        .card-icon { font-size: 2em; margin-right: 15px; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card-title { font-size: 1.5em; font-weight: bold; color: #333; }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 20px 0; }
+        .metric { text-align: center; padding: 15px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px; border: 1px solid #e9ecef; }
+        .metric-value { font-size: 1.8em; font-weight: bold; color: #667eea; margin-bottom: 5px; }
+        .metric-label { font-size: 0.9em; color: #666; }
+        .chart-container { position: relative; height: 300px; margin: 20px 0; background: #f8f9fa; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
+        .chart-placeholder { text-align: center; color: #666; }
+        .recommendation { background: linear-gradient(135deg, #d4edda, #c3e6cb); border: 1px solid #c3e6cb; border-radius: 15px; padding: 20px; margin: 15px 0; border-left: 5px solid #28a745; }
+        .recommendation h4 { color: #155724; margin-bottom: 10px; display: flex; align-items: center; }
+        .recommendation h4 i { margin-right: 10px; }
+        .btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-block; margin: 10px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: linear-gradient(135deg, #6c757d, #495057); }
+        .btn-success { background: linear-gradient(135deg, #28a745, #20c997); }
+        .footer { text-align: center; padding: 30px; color: rgba(255, 255, 255, 0.8); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-cloud"></i> HYCU M365 Sizing Dashboard</h1>
+            <p>Comprehensive Microsoft 365 Tenant Analysis for Backup Planning</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Tenant Overview Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-building card-icon"></i>
+                    <h2 class="card-title">Tenant Overview</h2>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-value">Contoso Corp</div>
+                        <div class="metric-label">Tenant Name</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2,847</div>
+                        <div class="metric-label">Total Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">2,634</div>
+                        <div class="metric-label">Active Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">213</div>
+                        <div class="metric-label">Guest Users</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Storage Analysis Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-database card-icon"></i>
+                    <h2 class="card-title">Storage Analysis</h2>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-value">1,247.3</div>
+                        <div class="metric-label">Exchange (GB)</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">3,892.7</div>
+                        <div class="metric-label">OneDrive (GB)</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1,456.2</div>
+                        <div class="metric-label">SharePoint (GB)</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">6,596.2</div>
+                        <div class="metric-label">Total (GB)</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-pie" style="font-size: 3em; color: #667eea; margin-bottom: 10px;"></i>
+                        <p>Storage Distribution Chart</p>
+                        <small>Exchange: 18.9% | OneDrive: 59.0% | SharePoint: 22.1%</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Growth Projections Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line card-icon"></i>
+                    <h2 class="card-title">Growth Projections</h2>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-bar" style="font-size: 3em; color: #667eea; margin-bottom: 10px;"></i>
+                        <p>Growth Projection Chart</p>
+                        <small>10%: 7,256 GB | 20%: 7,915 GB | 30%: 8,575 GB</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup Recommendations Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-shield-alt card-icon"></i>
+                    <h2 class="card-title">Backup Recommendations</h2>
+                </div>
+                <div class="recommendation">
+                    <h4><i class="fas fa-check-circle"></i> Recommended Backup Frequency: Daily</h4>
+                </div>
+                <div class="recommendation">
+                    <h4><i class="fas fa-check-circle"></i> Retention Policy: 7 years</h4>
+                </div>
+                <div class="recommendation">
+                    <h4><i class="fas fa-check-circle"></i> Estimated Backup Storage: 9,894.3 GB</h4>
+                </div>
+                <div class="recommendation">
+                    <h4><i class="fas fa-check-circle"></i> Recommended Backup Window: Off-hours (2 AM - 6 AM)</h4>
+                </div>
+            </div>
+
+            <!-- Cost Analysis Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-dollar-sign card-icon"></i>
+                    <h2 class="card-title">Cost Analysis</h2>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-value">$659.62</div>
+                        <div class="metric-label">Monthly Storage</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">$5,268.00</div>
+                        <div class="metric-label">Monthly Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">$5,927.62</div>
+                        <div class="metric-label">Total Monthly</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">$71,131.44</div>
+                        <div class="metric-label">Annual Cost</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Analysis Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-users card-icon"></i>
+                    <h2 class="card-title">Teams Analysis</h2>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-value">187</div>
+                        <div class="metric-label">Total Teams</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1,247</div>
+                        <div class="metric-label">Total Channels</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">6.7</div>
+                        <div class="metric-label">Avg Channels/Team</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-download card-icon"></i>
+                <h2 class="card-title">Export Options</h2>
+            </div>
+            <div style="text-align: center;">
+                <button class="btn">
+                    <i class="fas fa-file-pdf"></i> Export to PDF
+                </button>
+                <button class="btn btn-secondary">
+                    <i class="fas fa-file-excel"></i> Export to Excel
+                </button>
+                <button class="btn btn-success">
+                    <i class="fas fa-cog"></i> Generate Backup Plan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Powered by HYCU M365 Sizing Tool v1.0 | For backup planning and capacity management</p>
+    </div>
+</body>
+</html>

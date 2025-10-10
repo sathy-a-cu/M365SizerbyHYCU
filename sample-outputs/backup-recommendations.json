@@ -1,0 +1,84 @@
+{
+  "BusinessCriticality": "High",
+  "ComplianceRequirements": "GDPR",
+  "RTORPO": {
+    "RTO": "4 hours",
+    "RPO": "1 hour",
+    "BackupFrequency": "Every 2 hours"
+  },
+  "StorageTiering": {
+    "HotTier": {
+      "Percentage": 40,
+      "Description": "Frequently accessed data",
+      "StorageClass": "Premium SSD",
+      "CostPerGB": 0.15
+    },
+    "CoolTier": {
+      "Percentage": 35,
+      "Description": "Infrequently accessed data",
+      "StorageClass": "Standard SSD",
+      "CostPerGB": 0.08
+    },
+    "ArchiveTier": {
+      "Percentage": 25,
+      "Description": "Long-term archival data",
+      "StorageClass": "Archive Storage",
+      "CostPerGB": 0.02
+    }
+  },
+  "ComplianceRecommendations": {
+    "DataRetention": "7 years",
+    "EncryptionRequired": true,
+    "AuditLogging": true,
+    "DataResidency": "EU regions only",
+    "RightToErasure": true,
+    "AccessControls": "Role-based access required"
+  },
+  "CostAnalysis": {
+    "MonthlyStorageCost": 659.62,
+    "MonthlyUserCost": 5268.00,
+    "TotalMonthlyCost": 5927.62,
+    "AnnualTotal": 71131.44,
+    "ROI": 245.6,
+    "BudgetCompliance": true
+  },
+  "DisasterRecovery": {
+    "PrimarySite": "Multi-AZ deployment",
+    "SecondarySite": "Active-passive cross-region",
+    "FailoverTime": "1-2 hours",
+    "DataSync": "Hourly",
+    "TestingFrequency": "Bi-weekly"
+  },
+  "BackupSchedule": {
+    "Exchange": "Every 2 hours",
+    "OneDrive": "Every hour",
+    "SharePoint": "Every 2 hours",
+    "Teams": "Every 4 hours"
+  },
+  "SecurityRecommendations": {
+    "EncryptionAtRest": "AES-256",
+    "EncryptionInTransit": "TLS 1.3",
+    "MultiFactorAuthentication": true,
+    "NetworkSegmentation": true,
+    "AccessLogging": true
+  },
+  "PerformanceRecommendations": {
+    "BackupWindow": "2 AM - 6 AM",
+    "ConcurrentBackups": 5,
+    "BandwidthOptimization": true,
+    "CompressionEnabled": true,
+    "DeduplicationEnabled": true
+  },
+  "MonitoringRecommendations": {
+    "BackupMonitoring": "Real-time",
+    "AlertThresholds": {
+      "BackupFailure": "Immediate",
+      "StorageUsage": "85%",
+      "PerformanceDegradation": "10%"
+    },
+    "ReportingFrequency": "Daily",
+    "DashboardAccess": "Role-based"
+  },
+  "GeneratedOn": "2024-01-15T14:35:18Z",
+  "RecommendationVersion": "1.2.0"
+}

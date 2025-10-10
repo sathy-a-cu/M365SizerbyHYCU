@@ -1,0 +1,134 @@
+{
+  "TenantInfo": {
+    "DisplayName": "Contoso Corporation",
+    "Id": "12345678-1234-1234-1234-123456789012",
+    "VerifiedDomains": [
+      "contoso.com",
+      "contoso.onmicrosoft.com"
+    ],
+    "CreatedDateTime": "2019-03-15T10:30:00Z",
+    "UserCounts": {
+      "TotalUsers": 2847,
+      "EnabledUsers": 2634,
+      "GuestUsers": 213,
+      "DisabledUsers": 0
+    }
+  },
+  "ExchangeData": {
+    "TotalMailboxes": 2634,
+    "TotalSizeGB": 1247.3,
+    "AverageSizeGB": 0.47,
+    "LargestMailboxGB": 8.2
+  },
+  "OneDriveData": {
+    "TotalAccounts": 2634,
+    "TotalSizeGB": 3892.7,
+    "AverageSizeGB": 1.48,
+    "LargestAccountGB": 12.5
+  },
+  "SharePointData": {
+    "TotalSites": 1247,
+    "TotalSizeGB": 1456.2,
+    "AverageSizeGB": 1.17,
+    "LargestSiteGB": 45.8
+  },
+  "TeamsData": {
+    "TotalTeams": 187,
+    "TotalChannels": 1247,
+    "AverageChannelsPerTeam": 6.7
+  },
+  "ArchiveData": {
+    "TotalMailboxesWithArchive": 1247,
+    "TotalArchiveSizeGB": 89.3,
+    "TotalArchiveItems": 156789,
+    "AverageArchiveSizeGB": 0.07
+  },
+  "RecoverableItemsData": {
+    "TotalRecoverableItemsGB": 234.7,
+    "AverageRecoverableItemsGB": 0.09,
+    "LargestRecoverableItemsGB": 2.1
+  },
+  "GrowthAnalysis": {
+    "CurrentTotalSizeGB": 6596.2,
+    "GrowthProjections": {
+      "10": 7255.8,
+      "20": 7915.4,
+      "30": 8575.1
+    },
+    "HistoricalData": {
+      "SixMonthsAgo": 5892.4,
+      "OneYearAgo": 5234.7,
+      "GrowthRate": 0.23
+    }
+  },
+  "BackupRecommendations": {
+    "BackupFrequency": "Daily",
+    "RetentionPolicy": "7 years",
+    "StorageEstimate": 9894.3,
+    "CriticalData": [
+      "Exchange",
+      "OneDrive",
+      "SharePoint"
+    ],
+    "BackupWindow": "Off-hours (2 AM - 6 AM)",
+    "RTORPO": {
+      "RTO": "4 hours",
+      "RPO": "1 hour"
+    },
+    "StorageTiering": {
+      "HotTier": {
+        "Percentage": 40,
+        "Description": "Frequently accessed data",
+        "StorageClass": "Premium SSD"
+      },
+      "CoolTier": {
+        "Percentage": 35,
+        "Description": "Infrequently accessed data",
+        "StorageClass": "Standard SSD"
+      },
+      "ArchiveTier": {
+        "Percentage": 25,
+        "Description": "Long-term archival data",
+        "StorageClass": "Archive Storage"
+      }
+    }
+  },
+  "CostAnalysis": {
+    "MonthlyStorageCost": 659.62,
+    "MonthlyUserCost": 5268.00,
+    "TotalMonthlyCost": 5927.62,
+    "AnnualCost": 71131.44,
+    "CostPerGB": 0.10,
+    "CostPerUser": 2.00,
+    "OptimizationPotential": {
+      "StorageTieringSavings": 1319.24,
+      "CompressionSavings": 3957.72,
+      "RetentionOptimizationSavings": 1978.86,
+      "TotalPotentialSavings": 7255.82
+    }
+  },
+  "ComplianceRecommendations": {
+    "DataRetention": "7 years",
+    "EncryptionRequired": true,
+    "AuditLogging": true,
+    "DataResidency": "Multi-region",
+    "RightToErasure": true,
+    "AccessControls": "Role-based access required"
+  },
+  "DisasterRecovery": {
+    "PrimarySite": "Multi-AZ deployment",
+    "SecondarySite": "Active-passive cross-region",
+    "FailoverTime": "1-2 hours",
+    "DataSync": "Hourly",
+    "TestingFrequency": "Bi-weekly"
+  },
+  "BackupSchedule": {
+    "Exchange": "Every 2 hours",
+    "OneDrive": "Every hour",
+    "SharePoint": "Every 2 hours",
+    "Teams": "Every 4 hours"
+  },
+  "GeneratedOn": "2024-01-15T14:30:22Z",
+  "AnalysisDuration": "00:03:45",
+  "DataFreshness": "2024-01-15T14:00:00Z"
+}
