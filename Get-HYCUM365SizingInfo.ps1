@@ -334,11 +334,19 @@ function Get-LicensingInformation {
         # Analyze license distribution
         $licenseAnalysis = @{}
         $totalLicensedUsers = 0
+        $powerAutomateFreeUsers = 0
         
         foreach ($sku in $licenseSKUs) {
             $skuName = $sku.SkuPartNumber
             $assignedUnits = $sku.PrepaidUnits.Enabled
             $consumedUnits = $sku.ConsumedUnits
+            
+            # Exclude Power Automate Free users from HYCU licensing count
+            if ($skuName -eq "FLOW_FREE") {
+                $powerAutomateFreeUsers = $consumedUnits
+                Write-ColorOutput "Power Automate Free Users: $consumedUnits (excluded from HYCU licensing)" "INFO"
+                continue
+            }
             
             # Map SKU to storage limits and license tier
             $storageLimit = Get-LicenseStorageLimit -SkuPartNumber $skuName
@@ -356,11 +364,12 @@ function Get-LicensingInformation {
             $totalLicensedUsers += $consumedUnits
         }
         
-        # Get mailbox information for archive and shared mailbox analysis
-        $mailboxInfo = Get-MailboxInformation
+        # Get mailbox information for shared mailbox analysis
+        $mailboxInfo = Get-MailboxInformation -LicensedUsers $totalLicensedUsers
         
         $script:ReportData.LicensingInfo = @{
             TotalLicensedUsers = $totalLicensedUsers
+            PowerAutomateFreeUsers = $powerAutomateFreeUsers
             LicenseDistribution = $licenseAnalysis
             MailboxAnalysis = $mailboxInfo
             HYCUEntitlement = @{
@@ -443,7 +452,10 @@ function Get-LicenseTier {
 
 # Function to get mailbox information
 function Get-MailboxInformation {
-    Write-ColorOutput "Analyzing mailbox types and archive mailboxes..." "INFO"
+    param(
+        [int]$LicensedUsers = 0
+    )
+    Write-ColorOutput "Analyzing mailbox types and shared mailboxes..." "INFO"
     
     try {
         # Connect to Exchange Online for detailed mailbox analysis
@@ -453,43 +465,49 @@ function Get-MailboxInformation {
                 TotalMailboxes = 0
                 RegularMailboxes = 0
                 SharedMailboxes = 0
-                ArchiveMailboxes = 0
                 ResourceMailboxes = 0
-                ArchivePercentage = 0
-                ExcessArchiveMailboxes = 0
+                SharedMailboxThreshold = 0
+                ExcessSharedMailboxes = 0
+                AdditionalLicensesNeeded = 0
             }
         }
         
-        # This would require Exchange Online connection
-        # For now, return estimated values based on user count
-        $totalMailboxes = $script:ReportData.TenantInfo.UserCounts.EnabledUsers
-        $estimatedSharedMailboxes = [math]::Round($totalMailboxes * 0.15)  # Estimate 15% shared mailboxes
-        $estimatedArchiveMailboxes = [math]::Round($totalMailboxes * 0.25)  # Estimate 25% archive mailboxes
-        $estimatedResourceMailboxes = [math]::Round($totalMailboxes * 0.05)  # Estimate 5% resource mailboxes
+        # Get actual mailbox data from Exchange usage report
+        $tempFile = [System.IO.Path]::GetTempFileName()
+        Get-MgReportMailboxUsageDetail -Period D30 -OutFile $tempFile
+        $mailboxUsage = Import-Csv $tempFile
+        Remove-Item $tempFile -Force
         
-        $totalMailboxCount = $totalMailboxes + $estimatedSharedMailboxes + $estimatedResourceMailboxes
-        $archivePercentage = if ($totalMailboxCount -gt 0) { ($estimatedArchiveMailboxes / $totalMailboxCount) * 100 } else { 0 }
+        # Count different types of mailboxes
+        $totalMailboxes = $mailboxUsage.Count
+        $regularMailboxes = $mailboxUsage | Where-Object { $_.'User Principal Name' -notlike "*#EXT#*" -and $_.'User Principal Name' -notlike "*@*#*" } | Measure-Object | Select-Object -ExpandProperty Count
+        $sharedMailboxes = $mailboxUsage | Where-Object { $_.'User Principal Name' -like "*#EXT#*" } | Measure-Object | Select-Object -ExpandProperty Count
+        $resourceMailboxes = $mailboxUsage | Where-Object { $_.'User Principal Name' -like "*@*#*" } | Measure-Object | Select-Object -ExpandProperty Count
         
-        # Calculate excess archive mailboxes (over 20% threshold)
-        $archiveThreshold = $totalMailboxCount * 0.20
-        $excessArchiveMailboxes = [math]::Max(0, $estimatedArchiveMailboxes - $archiveThreshold)
+        # Calculate shared mailbox analysis based on licensed users
+        $sharedMailboxThreshold = [math]::Round($LicensedUsers * 0.20)  # 20% allowance
+        $excessSharedMailboxes = [math]::Max(0, $sharedMailboxes - $sharedMailboxThreshold)
+        $additionalLicensesNeeded = [math]::Ceiling($excessSharedMailboxes / 50)  # Each license covers 50 shared mailboxes
         
         $mailboxInfo = @{
-            TotalMailboxes = $totalMailboxCount
-            RegularMailboxes = $totalMailboxes
-            SharedMailboxes = $estimatedSharedMailboxes
-            ArchiveMailboxes = $estimatedArchiveMailboxes
-            ResourceMailboxes = $estimatedResourceMailboxes
-            ArchivePercentage = [math]::Round($archivePercentage, 2)
-            ExcessArchiveMailboxes = [math]::Round($excessArchiveMailboxes)
-            ArchiveThreshold = [math]::Round($archiveThreshold)
+            TotalMailboxes = $totalMailboxes
+            RegularMailboxes = $regularMailboxes
+            SharedMailboxes = $sharedMailboxes
+            ResourceMailboxes = $resourceMailboxes
+            SharedMailboxThreshold = $sharedMailboxThreshold
+            ExcessSharedMailboxes = $excessSharedMailboxes
+            AdditionalLicensesNeeded = $additionalLicensesNeeded
         }
         
-        Write-ColorOutput "Total Mailboxes: $totalMailboxCount" "SUCCESS"
-        Write-ColorOutput "Archive Mailboxes: $estimatedArchiveMailboxes ($([math]::Round($archivePercentage, 1))%)" "SUCCESS"
+        Write-ColorOutput "Total Mailboxes: $totalMailboxes" "SUCCESS"
+        Write-ColorOutput "Regular Mailboxes: $regularMailboxes" "SUCCESS"
+        Write-ColorOutput "Shared Mailboxes: $sharedMailboxes" "SUCCESS"
+        Write-ColorOutput "Resource Mailboxes: $resourceMailboxes" "SUCCESS"
+        Write-ColorOutput "20% Allowance: $sharedMailboxThreshold shared mailboxes (20% of $LicensedUsers licensed users)" "SUCCESS"
         
-        if ($excessArchiveMailboxes -gt 0) {
-            Write-ColorOutput "Excess Archive Mailboxes: $excessArchiveMailboxes (over 20% threshold)" "WARNING"
+        if ($excessSharedMailboxes -gt 0) {
+            Write-ColorOutput "Excess Shared Mailboxes: $excessSharedMailboxes (over 20% allowance)" "WARNING"
+            Write-ColorOutput "Additional Licenses Needed: $additionalLicensesNeeded" "WARNING"
         }
         
         return $mailboxInfo
@@ -500,10 +518,10 @@ function Get-MailboxInformation {
             TotalMailboxes = 0
             RegularMailboxes = 0
             SharedMailboxes = 0
-            ArchiveMailboxes = 0
             ResourceMailboxes = 0
-            ArchivePercentage = 0
-            ExcessArchiveMailboxes = 0
+            SharedMailboxThreshold = 0
+            ExcessSharedMailboxes = 0
+            AdditionalLicensesNeeded = 0
         }
     }
 }
@@ -528,17 +546,17 @@ function Get-ExchangeUsage {
         
         $mailboxUsage = Import-Csv $tempFile
         Remove-Item $tempFile -Force
-        $totalMailboxSize = ($mailboxUsage | Measure-Object -Property StorageUsedInBytes -Sum).Sum / 1GB
+        $totalMailboxSize = ($mailboxUsage | Measure-Object -Property 'Storage Used (Byte)' -Sum).Sum / 1GB
         
         # Debug: Check if we're getting storage data
         Write-ColorOutput "Exchange Debug: Found $($mailboxUsage.Count) mailboxes, Total size: $totalMailboxSize GB" "INFO"
         
         # Get top 5 mailboxes by size
-        $top5Mailboxes = $mailboxUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 5 | ForEach-Object {
+        $top5Mailboxes = $mailboxUsage | Sort-Object 'Storage Used (Byte)' -Descending | Select-Object -First 5 | ForEach-Object {
             [PSCustomObject]@{
-                DisplayName = $_.DisplayName
-                UserPrincipalName = $_.UserPrincipalName
-                StorageUsedInGB = [math]::Round($_.StorageUsedInBytes / 1GB, 2)
+                DisplayName = $_.'Display Name'
+                UserPrincipalName = $_.'User Principal Name'
+                StorageUsedInGB = [math]::Round([long]$_.'Storage Used (Byte)' / 1GB, 2)
             }
         }
         
@@ -546,7 +564,7 @@ function Get-ExchangeUsage {
             TotalMailboxes = $mailboxUsage.Count
             TotalSizeGB = [math]::Round($totalMailboxSize, 2)
             AverageSizeGB = [math]::Round($totalMailboxSize / $mailboxUsage.Count, 2)
-            LargestMailboxGB = [math]::Round(($mailboxUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 1).StorageUsedInBytes / 1GB, 2)
+            LargestMailboxGB = [math]::Round(($mailboxUsage | Sort-Object 'Storage Used (Byte)' -Descending | Select-Object -First 1).'Storage Used (Byte)' / 1GB, 2)
             Top5Mailboxes = $top5Mailboxes
         }
         
@@ -580,17 +598,17 @@ function Get-OneDriveUsage {
         
         $oneDriveUsage = Import-Csv $tempFile
         Remove-Item $tempFile -Force
-        $totalOneDriveSize = ($oneDriveUsage | Measure-Object -Property StorageUsedInBytes -Sum).Sum / 1GB
+        $totalOneDriveSize = ($oneDriveUsage | Measure-Object -Property 'Storage Used (Byte)' -Sum).Sum / 1GB
         
         # Debug: Check if we're getting storage data
         Write-ColorOutput "OneDrive Debug: Found $($oneDriveUsage.Count) accounts, Total size: $totalOneDriveSize GB" "INFO"
         
         # Get top 5 OneDrive accounts by size
-        $top5OneDrives = $oneDriveUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 5 | ForEach-Object {
+        $top5OneDrives = $oneDriveUsage | Sort-Object 'Storage Used (Byte)' -Descending | Select-Object -First 5 | ForEach-Object {
             [PSCustomObject]@{
-                DisplayName = $_.DisplayName
-                UserPrincipalName = $_.UserPrincipalName
-                StorageUsedInGB = [math]::Round($_.StorageUsedInBytes / 1GB, 2)
+                DisplayName = $_.'Owner Display Name'
+                UserPrincipalName = $_.'Owner Principal Name'
+                StorageUsedInGB = [math]::Round([long]$_.'Storage Used (Byte)' / 1GB, 2)
             }
         }
         
@@ -598,7 +616,7 @@ function Get-OneDriveUsage {
             TotalAccounts = $oneDriveUsage.Count
             TotalSizeGB = [math]::Round($totalOneDriveSize, 2)
             AverageSizeGB = [math]::Round($totalOneDriveSize / $oneDriveUsage.Count, 2)
-            LargestAccountGB = [math]::Round(($oneDriveUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 1).StorageUsedInBytes / 1GB, 2)
+            LargestAccountGB = [math]::Round(($oneDriveUsage | Sort-Object 'Storage Used (Byte)' -Descending | Select-Object -First 1).'Storage Used (Byte)' / 1GB, 2)
             Top5OneDrives = $top5OneDrives
         }
         
@@ -632,17 +650,17 @@ function Get-SharePointUsage {
         
         $sharePointUsage = Import-Csv $tempFile
         Remove-Item $tempFile -Force
-        $totalSharePointSize = ($sharePointUsage | Measure-Object -Property StorageUsedInBytes -Sum).Sum / 1GB
+        $totalSharePointSize = ($sharePointUsage | Measure-Object -Property 'Storage Used (Byte)' -Sum).Sum / 1GB
         
         # Debug: Check if we're getting storage data
         Write-ColorOutput "SharePoint Debug: Found $($sharePointUsage.Count) sites, Total size: $totalSharePointSize GB" "INFO"
         
         # Get top 5 SharePoint sites by size
-        $top5Sites = $sharePointUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 5 | ForEach-Object {
+        $top5Sites = $sharePointUsage | Sort-Object 'Storage Used (Byte)' -Descending | Select-Object -First 5 | ForEach-Object {
             [PSCustomObject]@{
-                SiteName = $_.SiteName
-                SiteUrl = $_.SiteUrl
-                StorageUsedInGB = [math]::Round($_.StorageUsedInBytes / 1GB, 2)
+                SiteName = $_.'Owner Display Name'
+                SiteUrl = $_.'Site URL'
+                StorageUsedInGB = [math]::Round([long]$_.'Storage Used (Byte)' / 1GB, 2)
             }
         }
         
@@ -650,7 +668,7 @@ function Get-SharePointUsage {
             TotalSites = $sharePointUsage.Count
             TotalSizeGB = [math]::Round($totalSharePointSize, 2)
             AverageSizeGB = [math]::Round($totalSharePointSize / $sharePointUsage.Count, 2)
-            LargestSiteGB = [math]::Round(($sharePointUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 1).StorageUsedInBytes / 1GB, 2)
+            LargestSiteGB = [math]::Round(($sharePointUsage | Sort-Object 'Storage Used (Byte)' -Descending | Select-Object -First 1).'Storage Used (Byte)' / 1GB, 2)
             Top5Sites = $top5Sites
         }
         
@@ -670,22 +688,9 @@ function Get-TeamsUsage {
     
     try {
         $teams = Get-MgTeam -All
-        $channels = @()
-        $totalMessages = 0
         
-        foreach ($team in $teams) {
-            try {
-                $teamChannels = Get-MgTeamChannel -TeamId $team.Id
-                $channels += $teamChannels
-                
-                # Skip message counting - requires ChannelMessage.Read.All permission
-                # Most users don't have this level of access
-            }
-            catch {
-                # Log the error but continue processing
-                Write-ColorOutput "Failed to get channels for team $($team.DisplayName): $($_.Exception.Message)" "WARNING"
-            }
-        }
+        # Skip channel counting for performance - just get team count
+        Write-ColorOutput "Teams found: $($teams.Count)" "INFO"
         
         # Calculate Teams private chat cost implications
         $privateChatCostPerMessage = 0.00075  # $0.00075 per message/notification
@@ -693,17 +698,16 @@ function Get-TeamsUsage {
         
         $script:ReportData.TeamsData = @{
             TotalTeams = $teams.Count
-            TotalChannels = $channels.Count
-            AverageChannelsPerTeam = if ($teams.Count -gt 0) { [math]::Round($channels.Count / $teams.Count, 2) } else { 0 }
+            TotalChannels = "N/A (Skipped for Performance)"
+            AverageChannelsPerTeam = "N/A (Skipped for Performance)"
             TotalMessages = "N/A (Permission Required)"
             PrivateChatCostPerMessage = $privateChatCostPerMessage
             CostPerMillionMessages = $costPerMillionMessages
-            Note = "Message counting requires ChannelMessage.Read.All permission"
+            Note = "Channel counting skipped for performance. Message counting requires ChannelMessage.Read.All permission"
         }
         
-        Write-ColorOutput "Teams: $($teams.Count) teams with $($channels.Count) channels" "SUCCESS"
-        Write-ColorOutput "Message counting skipped (requires ChannelMessage.Read.All permission)" "INFO"
-        Write-ColorOutput "Private Chat Cost: $$privateChatCostPerMessage per message ($$costPerMillionMessages per million)" "WARNING"
+        Write-ColorOutput "Teams: $($teams.Count) teams" "SUCCESS"
+        Write-ColorOutput "Private Chat Cost: `$$privateChatCostPerMessage per message (`$$costPerMillionMessages per million)" "WARNING"
     }
     catch {
         Write-ColorOutput "Failed to get Teams usage: $($_.Exception.Message)" "ERROR"
@@ -715,22 +719,27 @@ function Get-PlannerUsage {
     Write-ColorOutput "Gathering Microsoft Planner usage data..." "INFO"
     
     try {
-        # Get all groups that might have Planner
+        # Optimize: Skip detailed Planner analysis for performance - just get basic info
         $groups = Get-MgGroup -All -Filter "groupTypes/any(c:c eq 'Unified')" -Property "Id,DisplayName,Description"
+        
+        # Sample-based approach: Check only first 5 groups for Planner plans
+        $sampleGroups = $groups | Select-Object -First 5
         $plannerPlans = @()
         $plannerTasks = 0
         
-        foreach ($group in $groups) {
+        Write-ColorOutput "Sampling Planner data from $($sampleGroups.Count) groups..." "INFO"
+        
+        foreach ($group in $sampleGroups) {
             try {
                 # Get Planner plans for this group
                 $plans = Get-MgGroupPlannerPlan -GroupId $group.Id -ErrorAction SilentlyContinue
                 if ($plans) {
                     $plannerPlans += $plans
                     
-                    # Get tasks for each plan
-                    foreach ($plan in $plans) {
+                    # Get tasks for first plan only (sampling approach)
+                    if ($plans.Count -gt 0) {
                         try {
-                            $tasks = Get-MgPlannerPlanTask -PlannerPlanId $plan.Id -ErrorAction SilentlyContinue
+                            $tasks = Get-MgPlannerPlanTask -PlannerPlanId $plans[0].Id -ErrorAction SilentlyContinue
                             if ($tasks) {
                                 $plannerTasks += $tasks.Count
                             }
@@ -750,6 +759,7 @@ function Get-PlannerUsage {
             TotalPlans = $plannerPlans.Count
             TotalTasks = $plannerTasks
             AverageTasksPerPlan = if ($plannerPlans.Count -gt 0) { [math]::Round($plannerTasks / $plannerPlans.Count, 2) } else { 0 }
+            Note = "Data based on sampling from first 5 groups for performance optimization"
         }
         
         Write-ColorOutput "Planner: $($plannerPlans.Count) plans with $plannerTasks tasks" "SUCCESS"
@@ -780,7 +790,7 @@ function Get-GroupsUsage {
             GroupsWithPlanner = 0  # This will be updated by Planner analysis
         }
         
-        Write-ColorOutput "Groups: $($groups.Count) total (Distribution: $($distributionGroups.Count), Security: $($securityGroups.Count), Unified: $($unifiedGroups.Count))" "SUCCESS"
+        Write-ColorOutput "Groups: $($groups.Count) total" "SUCCESS"
     }
     catch {
         Write-ColorOutput "Failed to get Groups usage: $($_.Exception.Message)" "ERROR"
@@ -992,6 +1002,21 @@ function Get-CostAnalysis {
 function New-HTMLReport {
     Write-ColorOutput "Generating HTML report..." "INFO"
     
+    # Pre-calculate values for HTML template
+    $monthlyStorageCost = [math]::Round($script:ReportData.CostAnalysis.MonthlyStorageCost, 2)
+    $monthlyWorkerNodeCost = [math]::Round($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost, 2)
+    $totalMonthlyCost = [math]::Round($script:ReportData.CostAnalysis.TotalMonthlyCost, 2)
+    $totalAnnualCost = [math]::Round($script:ReportData.CostAnalysis.TotalAnnualCost, 2)
+    $storageCostPerUser = [math]::Round($script:ReportData.CostAnalysis.StorageCostPerUser, 2)
+    $workerNodeCostPerUser = [math]::Round($script:ReportData.CostAnalysis.WorkerNodeCostPerUser, 2)
+    $totalCostPerUser = [math]::Round($script:ReportData.CostAnalysis.TotalCostPerUser, 2)
+    $tenantSizeTB = [math]::Round($script:ReportData.CostAnalysis.TenantSizeTB, 2)
+    $annualStorageCost = [math]::Round($script:ReportData.CostAnalysis.AnnualStorageCost, 2)
+    $annualWorkerNodeCost = [math]::Round($script:ReportData.CostAnalysis.AnnualWorkerNodeCost, 2)
+    $costPerTBPerMonth = [math]::Round($script:ReportData.CostAnalysis.CostPerTBPerMonth, 0)
+    $teamsCostPerMillion = [math]::Round($script:ReportData.TeamsData.CostPerMillionMessages, 0)
+    $teamsCostPerMessage = [math]::Round($script:ReportData.TeamsData.PrivateChatCostPerMessage, 5)
+    
     $reportPath = Join-Path $script:OutputDirectory "HYCU-M365-Sizing-$(Get-Date -Format 'yyyy-MM-dd-HHmm').html"
     
     $html = @"
@@ -1019,6 +1044,7 @@ function New-HTMLReport {
         .table th { background-color: #f8f9fa; font-weight: bold; }
         .recommendation { background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745; margin: 10px 0; }
         .warning { background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 10px 0; }
+        .info { background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8; margin: 10px 0; }
         .footer { text-align: center; padding: 20px; color: #666; border-top: 1px solid #eee; }
     </style>
 </head>
@@ -1077,30 +1103,6 @@ function New-HTMLReport {
                         <div style="font-size: 0.8em; color: #888; margin-top: 5px;">$([math]::Round($script:ReportData.GrowthAnalysis.CurrentTotalSizeGB / $script:ReportData.TenantInfo.UserCounts.EnabledUsers, 1)) GB per user</div>
                     </div>
                 </div>
-                
-                <h3>Initial Cost Estimates</h3>
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.StorageCostPerUser)</div>
-                        <div class="metric-label">Storage Cost per User</div>
-                        <div style="font-size: 0.8em; color: #888; margin-top: 5px;">Monthly</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.WorkerNodeCostPerUser)</div>
-                        <div class="metric-label">Worker Node Cost per User</div>
-                        <div style="font-size: 0.8em; color: #888; margin-top: 5px;">Monthly</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.TotalCostPerUser)</div>
-                        <div class="metric-label">Total Cost per User</div>
-                        <div style="font-size: 0.8em; color: #888; margin-top: 5px;">Monthly</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.CostAnalysis.TenantSizeTB) TB</div>
-                        <div class="metric-label">Tenant Size</div>
-                        <div style="font-size: 0.8em; color: #888; margin-top: 5px;">Pre-compression</div>
-                    </div>
-                </div>
             </div>
             
             <div class="section">
@@ -1116,7 +1118,7 @@ function New-HTMLReport {
                     <tbody>
 "@
 
-        foreach ($rate in $script:ReportData.GrowthAnalysis.GrowthProjections.Keys) {
+        foreach ($rate in ($script:ReportData.GrowthAnalysis.GrowthProjections.Keys | Sort-Object)) {
             $projectedSize = $script:ReportData.GrowthAnalysis.GrowthProjections[$rate]
             $additionalStorage = $projectedSize - $script:ReportData.GrowthAnalysis.CurrentTotalSizeGB
             $html += "<tr><td>$rate%</td><td>$projectedSize</td><td>$additionalStorage GB</td></tr>"
@@ -1128,51 +1130,32 @@ function New-HTMLReport {
             </div>
             
             <div class="section">
-                <h2>👥 Teams Analysis</h2>
+                <h2>🔧 Other M365 Services</h2>
                 <div class="metric-grid">
                     <div class="metric-card">
                         <div class="metric-value">$($script:ReportData.TeamsData.TotalTeams)</div>
-                        <div class="metric-label">Total Teams</div>
+                        <div class="metric-label">Teams</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.TeamsData.TotalChannels)</div>
-                        <div class="metric-label">Total Channels</div>
+                        <div class="metric-value">$($script:ReportData.PlannerData.TotalPlans)</div>
+                        <div class="metric-label">Planner Plans</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.TeamsData.TotalMessages)</div>
-                        <div class="metric-label">Channel Messages</div>
+                        <div class="metric-value">$($script:ReportData.GroupsData.TotalGroups)</div>
+                        <div class="metric-label">Groups</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.TeamsData.CostPerMillionMessages)</div>
-                        <div class="metric-label">Cost per Million Private Messages</div>
-                    </div>
+                </div>
+                <div class="info">
+                    <p>Detailed analysis skipped for performance optimization as these services have minimal impact on HYCU backup sizing.</p>
                 </div>
                 <div class="warning">
                     <strong>⚠️ Teams Private Chat Cost Impact:</strong>
                     <p>Protecting Teams private chats (1:1 conversations) incurs additional costs from Microsoft:</p>
                     <ul>
-                        <li><strong>Cost per message/notification:</strong> $$($script:ReportData.TeamsData.PrivateChatCostPerMessage)</li>
-                        <li><strong>Cost per million messages:</strong> $$($script:ReportData.TeamsData.CostPerMillionMessages)</li>
+                        <li><strong>Cost per message/notification:</strong> PLACEHOLDER_11</li>
+                        <li><strong>Cost per million messages:</strong> PLACEHOLDER_10</li>
                         <li><strong>Impact:</strong> Consider this additional cost when planning Teams private chat protection</li>
                     </ul>
-                </div>
-            </div>
-            
-            <div class="section">
-                <h2>📋 Planner Analysis</h2>
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.PlannerData.TotalPlans)</div>
-                        <div class="metric-label">Total Plans</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.PlannerData.TotalTasks)</div>
-                        <div class="metric-label">Total Tasks</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.PlannerData.AverageTasksPerPlan)</div>
-                        <div class="metric-label">Avg Tasks/Plan</div>
-                    </div>
                 </div>
             </div>
             
@@ -1192,17 +1175,30 @@ function New-HTMLReport {
                         <div class="metric-label">Shared Mailboxes</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.ArchiveMailboxes)</div>
-                        <div class="metric-label">Archive Mailboxes</div>
-                    </div>
-                    <div class="metric-card">
                         <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.ResourceMailboxes)</div>
                         <div class="metric-label">Resource Mailboxes</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.ArchivePercentage)%</div>
-                        <div class="metric-label">Archive Percentage</div>
+                        <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.SharedMailboxThreshold)</div>
+                        <div class="metric-label">20% Allowance</div>
                     </div>
+                    <div class="metric-card">
+                        <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.ExcessSharedMailboxes)</div>
+                        <div class="metric-label">Excess Shared Mailboxes</div>
+                    </div>
+                </div>
+                <div class="recommendation">
+                    <strong>📝 Mailbox Type Breakdown:</strong>
+                    <p>Total Mailboxes ($($script:ReportData.LicensingInfo.MailboxAnalysis.TotalMailboxes)) = Active User ($($script:ReportData.LicensingInfo.MailboxAnalysis.RegularMailboxes)) + Shared ($($script:ReportData.LicensingInfo.MailboxAnalysis.SharedMailboxes)) + Resource ($($script:ReportData.LicensingInfo.MailboxAnalysis.ResourceMailboxes))</p>
+                    <p>Shared Mailboxes are included in the 20% allowance based on licensed users. Excess shared mailboxes require additional licenses.</p>
+                </div>
+                
+                <div class="warning">
+                    <strong>🔍 User Count Reconciliation:</strong>
+                    <p><strong>Licensed Users:</strong> $($script:ReportData.LicensingInfo.TotalLicensedUsers) (for HYCU licensing)</p>
+                    <p><strong>Total Mailboxes:</strong> $($script:ReportData.LicensingInfo.MailboxAnalysis.TotalMailboxes) (includes shared, resource, and guest mailboxes)</p>
+                    <p><strong>Power Automate Free Users:</strong> $($script:ReportData.LicensingInfo.PowerAutomateFreeUsers) (excluded from HYCU licensing)</p>
+                    <p><strong>Explanation:</strong> The difference between licensed users and total mailboxes is due to shared mailboxes, resource mailboxes, and guest accounts that don't require HYCU licenses.</p>
                 </div>
             </div>
             
@@ -1228,37 +1224,19 @@ function New-HTMLReport {
                 </div>
             </div>
             
-            <div class="section">
-                <h2>👥 Groups Analysis</h2>
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.GroupsData.TotalGroups)</div>
-                        <div class="metric-label">Total Groups</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.GroupsData.UnifiedGroups)</div>
-                        <div class="metric-label">Unified Groups</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.GroupsData.SecurityGroups)</div>
-                        <div class="metric-label">Security Groups</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.GroupsData.DistributionGroups)</div>
-                        <div class="metric-label">Distribution Groups</div>
-                    </div>
-                </div>
-            </div>
             
             <div class="section">
                 <h2>🏆 Top 5 by Size</h2>
+                <div class="warning">
+                    <strong>📝 Privacy Note:</strong> The names shown are anonymized for privacy.
+                </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
                     <div>
                         <h3>📧 Top 5 Mailboxes</h3>
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>User</th>
+                                    <th>User (Anonymized)</th>
                                     <th>Size (GB)</th>
                                 </tr>
                             </thead>
@@ -1284,7 +1262,7 @@ function New-HTMLReport {
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>User</th>
+                                    <th>User (Anonymized)</th>
                                     <th>Size (GB)</th>
                                 </tr>
                             </thead>
@@ -1310,7 +1288,7 @@ function New-HTMLReport {
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>Site Name</th>
+                                    <th>Site (Anonymized)</th>
                                     <th>Size (GB)</th>
                                 </tr>
                             </thead>
@@ -1387,12 +1365,12 @@ function New-HTMLReport {
                         <div class="metric-label">Shared Mailboxes</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.ArchiveMailboxes)</div>
-                        <div class="metric-label">Archive Mailboxes</div>
+                        <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.SharedMailboxThreshold)</div>
+                        <div class="metric-label">20% Allowance</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.ArchivePercentage)%</div>
-                        <div class="metric-label">Archive Percentage</div>
+                        <div class="metric-value">$($script:ReportData.LicensingInfo.MailboxAnalysis.AdditionalLicensesNeeded)</div>
+                        <div class="metric-label">Additional Licenses</div>
                     </div>
                 </div>
                 
@@ -1408,12 +1386,12 @@ function New-HTMLReport {
                 </div>
                 
                 <div class="warning">
-                    <strong>Archive Mailbox Analysis:</strong>
+                    <strong>Shared Mailbox Analysis:</strong>
                     <ul>
-                        <li>Archive Mailboxes: $($script:ReportData.LicensingInfo.MailboxAnalysis.ArchiveMailboxes) ($($script:ReportData.LicensingInfo.MailboxAnalysis.ArchivePercentage)%)</li>
-                        <li>20% Threshold: $($script:ReportData.LicensingInfo.MailboxAnalysis.ArchiveThreshold) mailboxes</li>
-                        <li>Excess Archive Mailboxes: $($script:ReportData.LicensingInfo.MailboxAnalysis.ExcessArchiveMailboxes)</li>
-                        <li>Additional Licenses for Excess Archives: $([math]::Ceiling($script:ReportData.LicensingInfo.MailboxAnalysis.ExcessArchiveMailboxes / 50))</li>
+                        <li>Shared Mailboxes: $($script:ReportData.LicensingInfo.MailboxAnalysis.SharedMailboxes)</li>
+                        <li>20% Allowance: $($script:ReportData.LicensingInfo.MailboxAnalysis.SharedMailboxThreshold) mailboxes (20% of $($script:ReportData.LicensingInfo.TotalLicensedUsers) licensed users)</li>
+                        <li>Excess Shared Mailboxes: $($script:ReportData.LicensingInfo.MailboxAnalysis.ExcessSharedMailboxes)</li>
+                        <li>Additional Licenses Needed: $($script:ReportData.LicensingInfo.MailboxAnalysis.AdditionalLicensesNeeded)</li>
                     </ul>
                 </div>
             </div>
@@ -1422,19 +1400,19 @@ function New-HTMLReport {
                 <h2>💰 Initial Cost Estimates</h2>
                 <div class="metric-grid">
                     <div class="metric-card">
-                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.MonthlyStorageCost, 2))</div>
+                        <div class="metric-value">PLACEHOLDER_0</div>
                         <div class="metric-label">Monthly Storage Cost</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost, 2))</div>
+                        <div class="metric-value">PLACEHOLDER_1</div>
                         <div class="metric-label">Monthly Worker Node Cost</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.TotalMonthlyCost, 2))</div>
+                        <div class="metric-value">PLACEHOLDER_2</div>
                         <div class="metric-label">Total Monthly Cost</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.TotalAnnualCost, 2))</div>
+                        <div class="metric-value">PLACEHOLDER_3</div>
                         <div class="metric-label">Total Annual Cost</div>
                     </div>
                 </div>
@@ -1454,7 +1432,7 @@ function New-HTMLReport {
                         <div class="metric-label">With 20% Growth</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.AnnualStorageCost)</div>
+                        <div class="metric-value">PLACEHOLDER_4</div>
                         <div class="metric-label">Annual Storage Cost</div>
                     </div>
                 </div>
@@ -1466,15 +1444,15 @@ function New-HTMLReport {
                         <div class="metric-label">Tenant Size (Pre-compression)</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.CostPerTBPerMonth)/TB/month</div>
+                        <div class="metric-value">PLACEHOLDER_5/TB/month</div>
                         <div class="metric-label">Cost per TB per Month</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost, 2))</div>
+                        <div class="metric-value">PLACEHOLDER_1</div>
                         <div class="metric-label">Monthly Worker Node Cost</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.AnnualWorkerNodeCost)</div>
+                        <div class="metric-value">PLACEHOLDER_6</div>
                         <div class="metric-label">Annual Worker Node Cost</div>
                     </div>
                 </div>
@@ -1482,9 +1460,9 @@ function New-HTMLReport {
                 <div class="recommendation">
                     <strong>Initial Cost Estimates Summary:</strong>
                     <ul>
-                        <li><strong>Storage Cost:</strong> $$($script:ReportData.CostAnalysis.MonthlyStorageCost)/month ($$($script:ReportData.CostAnalysis.AnnualStorageCost)/year)</li>
-                        <li><strong>Worker Node Cost:</strong> $$([math]::Round($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost, 2))/month ($$($script:ReportData.CostAnalysis.AnnualWorkerNodeCost)/year)</li>
-                        <li><strong>Total Cost:</strong> $$([math]::Round($script:ReportData.CostAnalysis.TotalMonthlyCost, 2))/month ($$([math]::Round($script:ReportData.CostAnalysis.TotalAnnualCost, 2))/year)</li>
+                        <li><strong>Storage Cost:</strong> PLACEHOLDER_0/month (PLACEHOLDER_4/year)</li>
+                        <li><strong>Worker Node Cost:</strong> PLACEHOLDER_1/month (PLACEHOLDER_6/year)</li>
+                        <li><strong>Total Cost:</strong> PLACEHOLDER_2/month (PLACEHOLDER_3/year)</li>
                         <li><strong>Assumptions:</strong> 40% compression, 20% growth rate, 0.2% daily change rate, 1-year retention</li>
                     </ul>
                 </div>
@@ -1500,7 +1478,22 @@ function New-HTMLReport {
 </html>
 "@
 
-    $html | Out-File -FilePath $reportPath -Encoding UTF8
+    # Format the HTML with proper dollar signs for cost values using string replacement
+    # Replace in reverse order to avoid substring conflicts (11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+    $formattedHtml = $html.Replace('PLACEHOLDER_11', "`$$teamsCostPerMessage")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_10', "`$$teamsCostPerMillion")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_9', "`$$totalCostPerUser")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_8', "`$$workerNodeCostPerUser")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_7', "`$$storageCostPerUser")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_6', "`$$annualWorkerNodeCost")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_5', "`$$costPerTBPerMonth")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_4', "`$$annualStorageCost")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_3', "`$$totalAnnualCost")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_2', "`$$totalMonthlyCost")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_1', "`$$monthlyWorkerNodeCost")
+    $formattedHtml = $formattedHtml.Replace('PLACEHOLDER_0', "`$$monthlyStorageCost")
+    
+    $formattedHtml | Out-File -FilePath $reportPath -Encoding UTF8
     Write-ColorOutput "Report generated: $reportPath" "SUCCESS"
     return $reportPath
 }
