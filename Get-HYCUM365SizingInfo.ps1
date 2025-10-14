@@ -86,6 +86,54 @@ param(
 # Global variables
 $script:StartTime = Get-Date
 $script:OutputDirectory = $OutputPath
+
+# Set up global error handling
+$ErrorActionPreference = "Continue"
+$Error.Clear()
+
+# Global error handler
+trap {
+    Write-PowerShellError -ErrorMessage $_.Exception.Message -Exception $_.Exception.ToString()
+    continue
+}
+# Set up logging
+$LogFile = Join-Path $script:OutputDirectory "HYCU-M365-Sizing-$(Get-Date -Format 'yyyy-MM-dd-HHmm').log"
+$ErrorLogFile = Join-Path $script:OutputDirectory "HYCU-M365-Sizing-Errors-$(Get-Date -Format 'yyyy-MM-dd-HHmm').log"
+
+# Function to write to both console and log file
+function Write-Log {
+    param(
+        [string]$Message,
+        [string]$Level = "INFO"
+    )
+    
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logEntry = "[$timestamp] [$Level] $Message"
+    
+    # Write to console
+    Write-Host $logEntry
+    
+    # Write to log file
+    Add-Content -Path $LogFile -Value $logEntry -Force
+}
+
+# Function to write errors to separate error log
+function Write-ErrorLog {
+    param(
+        [string]$Message,
+        [string]$Exception = ""
+    )
+    
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $errorEntry = "[$timestamp] [ERROR] $Message"
+    if ($Exception) {
+        $errorEntry += "`nException: $Exception"
+    }
+    
+    # Write to error log file
+    Add-Content -Path $ErrorLogFile -Value $errorEntry -Force
+}
+
 $script:ReportData = @{
     TenantInfo = @{}
     ExchangeData = @{}
@@ -97,9 +145,13 @@ $script:ReportData = @{
     GrowthAnalysis = @{}
     BackupRecommendations = @{}
     CostAnalysis = @{}
+    LicensingInfo = @{}
+    SitesAndOneDriveData = @{}
+    PlannerData = @{}
+    GroupsData = @{}
 }
 
-# Function to write colored output
+# Function to write colored output with proper error routing
 function Write-ColorOutput {
     param(
         [string]$Message,
@@ -115,7 +167,55 @@ function Write-ColorOutput {
         "HEADER" { "Cyan" }
     }
     
-    Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $color
+    $logEntry = "[$timestamp] [$Level] $Message"
+    
+    # Write to console with color
+    Write-Host $logEntry -ForegroundColor $color
+    
+    # Always write to main log file
+    try {
+        Add-Content -Path $LogFile -Value $logEntry -Force -ErrorAction SilentlyContinue
+    }
+    catch {
+        # If log file write fails, continue
+    }
+    
+    # Write errors to separate error log
+    if ($Level -eq "ERROR") {
+        try {
+            Write-ErrorLog -Message $Message
+        }
+        catch {
+            # If error log write fails, continue
+        }
+    }
+}
+
+# Function to capture and log PowerShell errors
+function Write-PowerShellError {
+    param(
+        [string]$ErrorMessage,
+        [string]$Exception = ""
+    )
+    
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $errorEntry = "[$timestamp] [ERROR] PowerShell Error: $ErrorMessage"
+    
+    if ($Exception) {
+        $errorEntry += "`nException Details: $Exception"
+    }
+    
+    # Write to console
+    Write-Host $errorEntry -ForegroundColor Red
+    
+    # Write to log files
+    try {
+        Add-Content -Path $LogFile -Value $errorEntry -Force -ErrorAction SilentlyContinue
+        Write-ErrorLog -Message $ErrorMessage -Exception $Exception
+    }
+    catch {
+        # If logging fails, continue
+    }
 }
 
 # Function to check and install required modules
@@ -139,7 +239,7 @@ function Install-RequiredModules {
                 Write-ColorOutput "Successfully installed $module" "SUCCESS"
             }
             catch {
-                Write-ColorOutput "Failed to install $module: $($_.Exception.Message)" "ERROR"
+                Write-ColorOutput "Failed to install ${module}: $($_.Exception.Message)" -Color Red
                 throw
             }
         }
@@ -413,8 +513,25 @@ function Get-ExchangeUsage {
     Write-ColorOutput "Gathering Exchange Online usage data..." "INFO"
     
     try {
-        $mailboxUsage = Get-MgReportMailboxUsageDetail -Period D30
+        # Use OutFile with progress suppression to avoid SDK bug
+        $tempFile = [System.IO.Path]::GetTempFileName()
+        
+        # Suppress progress bar to avoid SDK bug (2147483647 progress error)
+        $oldProgressPreference = $ProgressPreference
+        $ProgressPreference = 'SilentlyContinue'
+        try {
+            Get-MgReportMailboxUsageDetail -Period D30 -OutFile $tempFile
+        }
+        finally {
+            $ProgressPreference = $oldProgressPreference
+        }
+        
+        $mailboxUsage = Import-Csv $tempFile
+        Remove-Item $tempFile -Force
         $totalMailboxSize = ($mailboxUsage | Measure-Object -Property StorageUsedInBytes -Sum).Sum / 1GB
+        
+        # Debug: Check if we're getting storage data
+        Write-ColorOutput "Exchange Debug: Found $($mailboxUsage.Count) mailboxes, Total size: $totalMailboxSize GB" "INFO"
         
         # Get top 5 mailboxes by size
         $top5Mailboxes = $mailboxUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 5 | ForEach-Object {
@@ -448,8 +565,25 @@ function Get-OneDriveUsage {
     Write-ColorOutput "Gathering OneDrive usage data..." "INFO"
     
     try {
-        $oneDriveUsage = Get-MgReportOneDriveUsageAccountDetail -Period D30
+        # Use OutFile with progress suppression to avoid SDK bug
+        $tempFile = [System.IO.Path]::GetTempFileName()
+        
+        # Suppress progress bar to avoid SDK bug (2147483647 progress error)
+        $oldProgressPreference = $ProgressPreference
+        $ProgressPreference = 'SilentlyContinue'
+        try {
+            Get-MgReportOneDriveUsageAccountDetail -Period D30 -OutFile $tempFile
+        }
+        finally {
+            $ProgressPreference = $oldProgressPreference
+        }
+        
+        $oneDriveUsage = Import-Csv $tempFile
+        Remove-Item $tempFile -Force
         $totalOneDriveSize = ($oneDriveUsage | Measure-Object -Property StorageUsedInBytes -Sum).Sum / 1GB
+        
+        # Debug: Check if we're getting storage data
+        Write-ColorOutput "OneDrive Debug: Found $($oneDriveUsage.Count) accounts, Total size: $totalOneDriveSize GB" "INFO"
         
         # Get top 5 OneDrive accounts by size
         $top5OneDrives = $oneDriveUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 5 | ForEach-Object {
@@ -483,8 +617,25 @@ function Get-SharePointUsage {
     Write-ColorOutput "Gathering SharePoint usage data..." "INFO"
     
     try {
-        $sharePointUsage = Get-MgReportSharePointSiteUsageDetail -Period D30
+        # Use OutFile with progress suppression to avoid SDK bug
+        $tempFile = [System.IO.Path]::GetTempFileName()
+        
+        # Suppress progress bar to avoid SDK bug (2147483647 progress error)
+        $oldProgressPreference = $ProgressPreference
+        $ProgressPreference = 'SilentlyContinue'
+        try {
+            Get-MgReportSharePointSiteUsageDetail -Period D30 -OutFile $tempFile
+        }
+        finally {
+            $ProgressPreference = $oldProgressPreference
+        }
+        
+        $sharePointUsage = Import-Csv $tempFile
+        Remove-Item $tempFile -Force
         $totalSharePointSize = ($sharePointUsage | Measure-Object -Property StorageUsedInBytes -Sum).Sum / 1GB
+        
+        # Debug: Check if we're getting storage data
+        Write-ColorOutput "SharePoint Debug: Found $($sharePointUsage.Count) sites, Total size: $totalSharePointSize GB" "INFO"
         
         # Get top 5 SharePoint sites by size
         $top5Sites = $sharePointUsage | Sort-Object StorageUsedInBytes -Descending | Select-Object -First 5 | ForEach-Object {
@@ -527,19 +678,12 @@ function Get-TeamsUsage {
                 $teamChannels = Get-MgTeamChannel -TeamId $team.Id
                 $channels += $teamChannels
                 
-                # Get messages from each channel (this is limited by API permissions)
-                foreach ($channel in $teamChannels) {
-                    try {
-                        $channelMessages = Get-MgTeamChannelMessage -TeamId $team.Id -ChannelId $channel.Id -Top 100
-                        $totalMessages += $channelMessages.Count
-                    }
-                    catch {
-                        # Some channels may not be accessible
-                    }
-                }
+                # Skip message counting - requires ChannelMessage.Read.All permission
+                # Most users don't have this level of access
             }
             catch {
-                # Some teams may not be accessible
+                # Log the error but continue processing
+                Write-ColorOutput "Failed to get channels for team $($team.DisplayName): $($_.Exception.Message)" "WARNING"
             }
         }
         
@@ -551,13 +695,14 @@ function Get-TeamsUsage {
             TotalTeams = $teams.Count
             TotalChannels = $channels.Count
             AverageChannelsPerTeam = if ($teams.Count -gt 0) { [math]::Round($channels.Count / $teams.Count, 2) } else { 0 }
-            TotalMessages = $totalMessages
+            TotalMessages = "N/A (Permission Required)"
             PrivateChatCostPerMessage = $privateChatCostPerMessage
             CostPerMillionMessages = $costPerMillionMessages
+            Note = "Message counting requires ChannelMessage.Read.All permission"
         }
         
         Write-ColorOutput "Teams: $($teams.Count) teams with $($channels.Count) channels" "SUCCESS"
-        Write-ColorOutput "Channel Messages: $totalMessages" "SUCCESS"
+        Write-ColorOutput "Message counting skipped (requires ChannelMessage.Read.All permission)" "INFO"
         Write-ColorOutput "Private Chat Cost: $$privateChatCostPerMessage per message ($$costPerMillionMessages per million)" "WARNING"
     }
     catch {
@@ -647,17 +792,43 @@ function Get-SitesAndOneDriveCounts {
     Write-ColorOutput "Gathering sites and OneDrive counts..." "INFO"
     
     try {
-        # Get SharePoint sites count
-        $sharePointSites = Get-MgReportSharePointSiteUsageDetail -Period D30
+        # Get SharePoint sites count (with progress suppression)
+        $tempFile = [System.IO.Path]::GetTempFileName()
+        
+        # Suppress progress bar to avoid SDK bug (2147483647 progress error)
+        $oldProgressPreference = $ProgressPreference
+        $ProgressPreference = 'SilentlyContinue'
+        try {
+            Get-MgReportSharePointSiteUsageDetail -Period D30 -OutFile $tempFile
+        }
+        finally {
+            $ProgressPreference = $oldProgressPreference
+        }
+        
+        $sharePointSites = Import-Csv $tempFile
         $sharePointSitesCount = $sharePointSites.Count
+        Remove-Item $tempFile -Force
         
         # Get Teams sites count (Teams create SharePoint sites)
         $teams = Get-MgTeam -All
         $teamsSitesCount = $teams.Count
         
-        # Get OneDrive accounts count
-        $oneDriveAccounts = Get-MgReportOneDriveUsageAccountDetail -Period D30
+        # Get OneDrive accounts count (with progress suppression)
+        $tempFile2 = [System.IO.Path]::GetTempFileName()
+        
+        # Suppress progress bar to avoid SDK bug (2147483647 progress error)
+        $oldProgressPreference = $ProgressPreference
+        $ProgressPreference = 'SilentlyContinue'
+        try {
+            Get-MgReportOneDriveUsageAccountDetail -Period D30 -OutFile $tempFile2
+        }
+        finally {
+            $ProgressPreference = $oldProgressPreference
+        }
+        
+        $oneDriveAccounts = Import-Csv $tempFile2
         $oneDriveAccountsCount = $oneDriveAccounts.Count
+        Remove-Item $tempFile2 -Force
         
         # Calculate total sites (SharePoint + Teams)
         $totalSites = $sharePointSitesCount + $teamsSitesCount
@@ -750,6 +921,14 @@ function Get-CostAnalysis {
         $currentStorageGB = $script:ReportData.GrowthAnalysis.CurrentTotalSizeGB
         $userCount = $script:ReportData.TenantInfo.UserCounts.EnabledUsers
         
+        # If no storage data available, provide estimated costs based on user count
+        if ($currentStorageGB -eq 0) {
+            Write-ColorOutput "No storage data available - providing estimated costs based on user count" "WARNING"
+            # Estimate 5 GB per user as a reasonable baseline
+            $currentStorageGB = $userCount * 5
+            Write-ColorOutput "Estimated storage: $currentStorageGB GB (5 GB per user)" "INFO"
+        }
+        
         # Storage cost calculation with compression and growth
         $compressionRate = 0.40  # 40% compression
         $growthRate = 0.20       # 20% growth rate
@@ -799,10 +978,10 @@ function Get-CostAnalysis {
         }
         
         Write-ColorOutput "Storage: $currentStorageGB GB → $compressedStorageGB GB (compressed) → $projectedStorageGB GB (with growth)" "SUCCESS"
-        Write-ColorOutput "Monthly Storage Cost: $$monthlyStorageCost ($$annualStorageCost annually)" "SUCCESS"
-        Write-ColorOutput "Worker Node Cost: $$monthlyWorkerNodeCost/month ($$annualWorkerNodeCost annually) - based on $tenantSizeTB TB tenant size" "SUCCESS"
-        Write-ColorOutput "Per-User Costs: Storage=$$storageCostPerUser, Worker Node=$$workerNodeCostPerUser, Total=$$totalCostPerUser" "SUCCESS"
-        Write-ColorOutput "Total Monthly Cost: $$totalMonthlyCost ($$totalAnnualCost annually)" "SUCCESS"
+        Write-ColorOutput "Monthly Storage Cost: $([math]::Round($monthlyStorageCost, 2)) ($$([math]::Round($annualStorageCost, 2)) annually)" "SUCCESS"
+        Write-ColorOutput "Worker Node Cost: $([math]::Round($monthlyWorkerNodeCost, 2))/month ($$([math]::Round($annualWorkerNodeCost, 2)) annually) - based on $([math]::Round($tenantSizeTB, 2)) TB tenant size" "SUCCESS"
+        Write-ColorOutput "Per-User Costs: Storage=$$([math]::Round($storageCostPerUser, 2)), Worker Node=$$([math]::Round($workerNodeCostPerUser, 2)), Total=$$([math]::Round($totalCostPerUser, 2))" "SUCCESS"
+        Write-ColorOutput "Total Monthly Cost: $([math]::Round($totalMonthlyCost, 2)) ($$([math]::Round($totalAnnualCost, 2)) annually)" "SUCCESS"
     }
     catch {
         Write-ColorOutput "Failed to generate cost analysis: $($_.Exception.Message)" "ERROR"
@@ -878,22 +1057,22 @@ function New-HTMLReport {
                 <h2>💾 Tenant Capacity</h2>
                 <div class="metric-grid">
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.ExchangeData.TotalSizeGB) GB</div>
+                        <div class="metric-value">$([math]::Round($script:ReportData.ExchangeData.TotalSizeGB, 1)) GB</div>
                         <div class="metric-label">Exchange Online</div>
                         <div style="font-size: 0.8em; color: #888; margin-top: 5px;">$([math]::Round($script:ReportData.ExchangeData.TotalSizeGB / $script:ReportData.TenantInfo.UserCounts.EnabledUsers, 1)) GB per user</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.OneDriveData.TotalSizeGB) GB</div>
+                        <div class="metric-value">$([math]::Round($script:ReportData.OneDriveData.TotalSizeGB, 1)) GB</div>
                         <div class="metric-label">OneDrive for Business</div>
                         <div style="font-size: 0.8em; color: #888; margin-top: 5px;">$([math]::Round($script:ReportData.OneDriveData.TotalSizeGB / $script:ReportData.TenantInfo.UserCounts.EnabledUsers, 1)) GB per user</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.SharePointData.TotalSizeGB) GB</div>
+                        <div class="metric-value">$([math]::Round($script:ReportData.SharePointData.TotalSizeGB, 1)) GB</div>
                         <div class="metric-label">SharePoint Online</div>
                         <div style="font-size: 0.8em; color: #888; margin-top: 5px;">$([math]::Round($script:ReportData.SharePointData.TotalSizeGB / $script:ReportData.TenantInfo.UserCounts.EnabledUsers, 1)) GB per user</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.GrowthAnalysis.CurrentTotalSizeGB) GB</div>
+                        <div class="metric-value">$([math]::Round($script:ReportData.GrowthAnalysis.CurrentTotalSizeGB, 1)) GB</div>
                         <div class="metric-label">Total Storage</div>
                         <div style="font-size: 0.8em; color: #888; margin-top: 5px;">$([math]::Round($script:ReportData.GrowthAnalysis.CurrentTotalSizeGB / $script:ReportData.TenantInfo.UserCounts.EnabledUsers, 1)) GB per user</div>
                     </div>
@@ -1243,19 +1422,19 @@ function New-HTMLReport {
                 <h2>💰 Initial Cost Estimates</h2>
                 <div class="metric-grid">
                     <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.MonthlyStorageCost)</div>
+                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.MonthlyStorageCost, 2))</div>
                         <div class="metric-label">Monthly Storage Cost</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost)</div>
+                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost, 2))</div>
                         <div class="metric-label">Monthly Worker Node Cost</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.TotalMonthlyCost)</div>
+                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.TotalMonthlyCost, 2))</div>
                         <div class="metric-label">Total Monthly Cost</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.TotalAnnualCost)</div>
+                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.TotalAnnualCost, 2))</div>
                         <div class="metric-label">Total Annual Cost</div>
                     </div>
                 </div>
@@ -1291,7 +1470,7 @@ function New-HTMLReport {
                         <div class="metric-label">Cost per TB per Month</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-value">$$($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost)</div>
+                        <div class="metric-value">$$([math]::Round($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost, 2))</div>
                         <div class="metric-label">Monthly Worker Node Cost</div>
                     </div>
                     <div class="metric-card">
@@ -1304,8 +1483,8 @@ function New-HTMLReport {
                     <strong>Initial Cost Estimates Summary:</strong>
                     <ul>
                         <li><strong>Storage Cost:</strong> $$($script:ReportData.CostAnalysis.MonthlyStorageCost)/month ($$($script:ReportData.CostAnalysis.AnnualStorageCost)/year)</li>
-                        <li><strong>Worker Node Cost:</strong> $$($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost)/month ($$($script:ReportData.CostAnalysis.AnnualWorkerNodeCost)/year)</li>
-                        <li><strong>Total Cost:</strong> $$($script:ReportData.CostAnalysis.TotalMonthlyCost)/month ($$($script:ReportData.CostAnalysis.TotalAnnualCost)/year)</li>
+                        <li><strong>Worker Node Cost:</strong> $$([math]::Round($script:ReportData.CostAnalysis.MonthlyWorkerNodeCost, 2))/month ($$($script:ReportData.CostAnalysis.AnnualWorkerNodeCost)/year)</li>
+                        <li><strong>Total Cost:</strong> $$([math]::Round($script:ReportData.CostAnalysis.TotalMonthlyCost, 2))/month ($$([math]::Round($script:ReportData.CostAnalysis.TotalAnnualCost, 2))/year)</li>
                         <li><strong>Assumptions:</strong> 40% compression, 20% growth rate, 0.2% daily change rate, 1-year retention</li>
                     </ul>
                 </div>
