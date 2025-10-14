@@ -33,16 +33,22 @@
     Custom annual growth rate percentage (default: 30)
 
 .PARAMETER Period
-    Historical data period in days (default: 180)
+    Historical data period in days (default: 30)
 
 .PARAMETER OutputPath
-    Custom output directory for reports
+    Output directory for reports (default: "output")
 
 .EXAMPLE
     .\Get-HYCUM365SizingInfo.ps1
+    # Runs with default settings: 30-day period, "output" directory
 
 .EXAMPLE
-    .\Get-HYCUM365SizingInfo.ps1 -UseAppAccess $true -TenantId "your-tenant-id" -ClientId "your-client-id" -ClientSecret "your-secret"
+    .\Get-HYCUM365SizingInfo.ps1 -OutputPath "C:\Reports" -Period 90
+    # Custom output directory and period
+
+.EXAMPLE
+    .\Get-HYCUM365SizingInfo.ps1 -ClientId "your-app-id" -ClientSecret "your-secret" -TenantId "your-tenant-id"
+    # Use application authentication (no repeated approval requests)
 
 .NOTES
     Author: HYCU
@@ -77,19 +83,60 @@ param(
     [int]$AnnualGrowth = 30,
     
     [Parameter(Mandatory = $false)]
-    [int]$Period = 180,
+    [int]$Period = 30,
     
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = "."
+    [string]$OutputPath = "output"
 )
 
 # Global variables
 $script:StartTime = Get-Date
 $script:OutputDirectory = $OutputPath
 
+# Create output directory if it doesn't exist
+if (-not (Test-Path $script:OutputDirectory)) {
+    try {
+        New-Item -ItemType Directory -Path $script:OutputDirectory -Force | Out-Null
+        Write-ColorOutput "Created output directory: $script:OutputDirectory" "INFO"
+    }
+    catch {
+        Write-ColorOutput "Failed to create output directory: $($_.Exception.Message)" "ERROR"
+        throw
+    }
+}
+
 # Set up global error handling
 $ErrorActionPreference = "Continue"
 $Error.Clear()
+
+# Function to capture and log PowerShell errors
+function Write-PowerShellError {
+    param(
+        [string]$ErrorMessage,
+        [string]$Exception = ""
+    )
+    
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $errorEntry = "[$timestamp] [ERROR] PowerShell Error: $ErrorMessage"
+    
+    if ($Exception) {
+        $errorEntry += "`nException Details: $Exception"
+    }
+    
+    # Write to console
+    Write-Host $errorEntry -ForegroundColor Red
+    
+    # Write to log files
+    try {
+        if ($script:OutputDirectory) {
+            $ErrorLogFile = Join-Path $script:OutputDirectory "HYCU-M365-Sizing-Errors-$(Get-Date -Format 'yyyy-MM-dd-HHmm').log"
+            $errorEntry | Out-File -FilePath $ErrorLogFile -Append -Encoding UTF8
+        }
+    }
+    catch {
+        # If we can't write to log file, just continue
+    }
+}
 
 # Global error handler
 trap {
