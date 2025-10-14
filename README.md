@@ -122,27 +122,41 @@ Your account needs these Microsoft Graph permissions:
 
 ## 🔧 Advanced Usage
 
-### Using App Authentication (For Automation)
+### ⚠️ Avoiding Repeated Admin Approval Requests
 
-If you want to run this without interactive login:
+**Problem:** If you're getting repeated "Approval required" prompts every time you run the script, this is because the script uses **delegated permissions** (user-based authentication) which require admin approval for each session.
+
+**Solution:** Use **Application Authentication** instead, which only requires one-time admin consent.
+
+### Using App Authentication (Recommended for Repeated Use)
+
+**Benefits:**
+- ✅ No repeated approval requests
+- ✅ Works for automation and scheduled runs
+- ✅ More secure for production environments
+- ✅ One-time admin consent only
+
+**Setup Steps:**
 
 1. **Create an Azure AD App Registration:**
-   - Go to Azure Portal > Azure Active Directory > App registrations
+   - Go to Azure Portal → Azure Active Directory → App registrations
    - Click "New registration"
    - Name: "HYCU M365 Sizing Tool"
    - Supported account types: "Accounts in this organizational directory only"
    - Click "Register"
+   - **Copy the Application (client) ID** and **Directory (tenant) ID**
 
 2. **Configure API Permissions:**
    - Go to "API permissions" in your app
-   - Click "Add a permission" > "Microsoft Graph" > "Application permissions"
+   - Click "Add a permission" → "Microsoft Graph" → "Application permissions"
    - Add these permissions:
      - `Reports.Read.All`
      - `User.Read.All`
      - `Group.Read.All`
      - `Team.ReadBasic.All`
      - `Sites.Read.All`
-   - Click "Grant admin consent"
+   - Click "Grant admin consent" (this is the **one-time approval**)
+   - Verify all permissions show "Granted for [Your Organization]"
 
 3. **Create a Client Secret:**
    - Go to "Certificates & secrets"
@@ -154,8 +168,31 @@ If you want to run this without interactive login:
 
 4. **Run with app authentication:**
    ```powershell
-   .\Get-HYCUM365SizingInfo.ps1 -UseAppAccess $true -TenantId "your-tenant-id" -ClientId "your-app-id" -ClientSecret "your-secret"
+   .\Get-HYCUM365SizingInfo.ps1 -OutputPath "./output" -Period 30 -ClientId "YOUR_APP_ID" -ClientSecret "YOUR_CLIENT_SECRET" -TenantId "YOUR_TENANT_ID"
    ```
+
+**Example with real values:**
+```powershell
+.\Get-HYCUM365SizingInfo.ps1 -OutputPath "./output" -Period 30 -ClientId "12345678-1234-1234-1234-123456789abc" -ClientSecret "your-secret-value-here" -TenantId "87654321-4321-4321-4321-987654321def"
+```
+
+### 🔄 Switching Between Authentication Methods
+
+**Interactive Authentication (Default):**
+- Uses your user account
+- Requires admin approval each time
+- Good for one-time analysis
+- ```powershell
+  .\Get-HYCUM365SizingInfo.ps1
+  ```
+
+**Application Authentication (Recommended):**
+- Uses app registration
+- One-time admin consent
+- Good for repeated use and automation
+- ```powershell
+  .\Get-HYCUM365SizingInfo.ps1 -ClientId "your-app-id" -ClientSecret "your-secret" -TenantId "your-tenant-id"
+  ```
 
 ### Customizing the Analysis
 
@@ -183,6 +220,11 @@ If you want to run this without interactive login:
 
 ### Common Issues
 
+**"Approval required" appears every time:**
+- **Problem:** Using interactive authentication requires admin approval each session
+- **Solution:** Use application authentication (see Advanced Usage section above)
+- **Quick Fix:** Create an Azure AD app registration and use `-ClientId`, `-ClientSecret`, and `-TenantId` parameters
+
 **"Module not found" error:**
 ```powershell
 # Install missing modules
@@ -198,6 +240,7 @@ Install-Module Microsoft.Graph.Reports -Force -AllowClobber
 - Clear browser cache and cookies
 - Try a different browser
 - Ensure your account has MFA configured properly
+- For app authentication: verify ClientId, ClientSecret, and TenantId are correct
 
 **"No data returned" error:**
 - Check your Microsoft 365 license (some features require specific licenses)
