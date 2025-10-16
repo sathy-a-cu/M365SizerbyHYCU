@@ -194,7 +194,6 @@ $script:ReportData = @{
     CostAnalysis = @{}
     LicensingInfo = @{}
     SitesAndOneDriveData = @{}
-    PlannerData = @{}
     GroupsData = @{}
 }
 
@@ -238,32 +237,6 @@ function Write-ColorOutput {
     }
 }
 
-# Function to capture and log PowerShell errors
-function Write-PowerShellError {
-    param(
-        [string]$ErrorMessage,
-        [string]$Exception = ""
-    )
-    
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $errorEntry = "[$timestamp] [ERROR] PowerShell Error: $ErrorMessage"
-    
-    if ($Exception) {
-        $errorEntry += "`nException Details: $Exception"
-    }
-    
-    # Write to console
-    Write-Host $errorEntry -ForegroundColor Red
-    
-    # Write to log files
-    try {
-        Add-Content -Path $LogFile -Value $errorEntry -Force -ErrorAction SilentlyContinue
-        Write-ErrorLog -Message $ErrorMessage -Exception $Exception
-    }
-    catch {
-        # If logging fails, continue
-    }
-}
 
 # Function to check and install required modules
 function Install-RequiredModules {
@@ -761,60 +734,6 @@ function Get-TeamsUsage {
     }
 }
 
-# Function to get Planner usage
-function Get-PlannerUsage {
-    Write-ColorOutput "Gathering Microsoft Planner usage data..." "INFO"
-    
-    try {
-        # Optimize: Skip detailed Planner analysis for performance - just get basic info
-        $groups = Get-MgGroup -All -Filter "groupTypes/any(c:c eq 'Unified')" -Property "Id,DisplayName,Description"
-        
-        # Sample-based approach: Check only first 5 groups for Planner plans
-        $sampleGroups = $groups | Select-Object -First 5
-        $plannerPlans = @()
-        $plannerTasks = 0
-        
-        Write-ColorOutput "Sampling Planner data from $($sampleGroups.Count) groups..." "INFO"
-        
-        foreach ($group in $sampleGroups) {
-            try {
-                # Get Planner plans for this group
-                $plans = Get-MgGroupPlannerPlan -GroupId $group.Id -ErrorAction SilentlyContinue
-                if ($plans) {
-                    $plannerPlans += $plans
-                    
-                    # Get tasks for first plan only (sampling approach)
-                    if ($plans.Count -gt 0) {
-                        try {
-                            $tasks = Get-MgPlannerPlanTask -PlannerPlanId $plans[0].Id -ErrorAction SilentlyContinue
-                            if ($tasks) {
-                                $plannerTasks += $tasks.Count
-                            }
-                        }
-                        catch {
-                            # Some plans may not be accessible
-                        }
-                    }
-                }
-            }
-            catch {
-                # Some groups may not have Planner or may not be accessible
-            }
-        }
-        
-        $script:ReportData.PlannerData = @{
-            TotalPlans = $plannerPlans.Count
-            TotalTasks = $plannerTasks
-            AverageTasksPerPlan = if ($plannerPlans.Count -gt 0) { [math]::Round($plannerTasks / $plannerPlans.Count, 2) } else { 0 }
-            Note = "Data based on sampling from first 5 groups for performance optimization"
-        }
-        
-        Write-ColorOutput "Planner: $($plannerPlans.Count) plans with $plannerTasks tasks" "SUCCESS"
-    }
-    catch {
-        Write-ColorOutput "Failed to get Planner usage: $($_.Exception.Message)" "ERROR"
-    }
-}
 
 # Function to get Groups usage
 function Get-GroupsUsage {
@@ -834,7 +753,6 @@ function Get-GroupsUsage {
             DistributionGroups = $distributionGroups.Count
             SecurityGroups = $securityGroups.Count
             UnifiedGroups = $unifiedGroups.Count
-            GroupsWithPlanner = 0  # This will be updated by Planner analysis
         }
         
         Write-ColorOutput "Groups: $($groups.Count) total" "SUCCESS"
@@ -1182,10 +1100,6 @@ function New-HTMLReport {
                     <div class="metric-card">
                         <div class="metric-value">$($script:ReportData.TeamsData.TotalTeams)</div>
                         <div class="metric-label">Teams</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">$($script:ReportData.PlannerData.TotalPlans)</div>
-                        <div class="metric-label">Planner Plans</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-value">$($script:ReportData.GroupsData.TotalGroups)</div>
@@ -1565,7 +1479,6 @@ try {
     Get-OneDriveUsage
     Get-SharePointUsage
     Get-TeamsUsage
-    Get-PlannerUsage
     Get-GroupsUsage
     Get-SitesAndOneDriveCounts
     

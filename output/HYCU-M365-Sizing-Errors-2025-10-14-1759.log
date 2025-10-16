@@ -1,0 +1,7 @@
+[2025-10-14 18:01:22] [ERROR] Failed to get Exchange usage: Attempted to divide by zero.
+[2025-10-14 18:01:22] [ERROR] Failed to get OneDrive usage: Attempted to divide by zero.
+[2025-10-14 18:01:22] [ERROR] Failed to get SharePoint usage: Attempted to divide by zero.
+[2025-10-14 18:01:29] [ERROR] Failed to generate cost analysis: Attempted to divide by zero.
+[2025-10-14 18:01:29] [ERROR] Script execution failed: Attempted to divide by zero.
+[2025-10-14 18:01:29] [ERROR] Attempted to divide by zero.
+Exception: System.DivideByZeroException: Attempted to divide by zero.

@@ -1,0 +1,70 @@
+[2025-10-14 18:28:03] [HEADER] Starting HYCU M365 Sizing Tool v1.0
+[2025-10-14 18:28:03] [HEADER] =====================================
+[2025-10-14 18:28:03] [INFO] Checking for required PowerShell modules...
+[2025-10-14 18:28:03] [SUCCESS] Microsoft.Graph.Reports is already installed
+[2025-10-14 18:28:03] [SUCCESS] Microsoft.Graph.Users is already installed
+[2025-10-14 18:28:03] [SUCCESS] Microsoft.Graph.Groups is already installed
+[2025-10-14 18:28:03] [SUCCESS] Microsoft.Graph.Teams is already installed
+[2025-10-14 18:28:04] [SUCCESS] Microsoft.Graph.Sites is already installed
+[2025-10-14 18:28:04] [SUCCESS] ExchangeOnlineManagement is already installed
+[2025-10-14 18:28:04] [INFO] Authenticating to Microsoft Graph API...
+[2025-10-14 18:28:08] [SUCCESS] Connected using interactive authentication
+[2025-10-14 18:28:08] [INFO] Gathering tenant information...
+[2025-10-14 18:28:10] [SUCCESS] Tenant: HYCU INC
+[2025-10-14 18:28:10] [INFO] Gathering user statistics...
+[2025-10-14 18:28:11] [SUCCESS] Total Users: 18 (Enabled: 17, Guests: 1)
+[2025-10-14 18:28:11] [INFO] Gathering Exchange Online usage data...
+[2025-10-14 18:28:14] [INFO] Exchange Debug: Found 6 mailboxes, Total size: 1.99689522013068 GB
+[2025-10-14 18:28:14] [SUCCESS] Exchange: 2 GB across 6 mailboxes
+[2025-10-14 18:28:14] [SUCCESS] Top mailbox: Bella Gibson (0.8 GB)
+[2025-10-14 18:28:14] [INFO] Gathering OneDrive usage data...
+[2025-10-14 18:28:15] [INFO] OneDrive Debug: Found 6 accounts, Total size: 1.85979721881449 GB
+[2025-10-14 18:28:15] [SUCCESS] OneDrive: 1.86 GB across 6 accounts
+[2025-10-14 18:28:15] [SUCCESS] Top OneDrive: Harry Young (0.01 GB)
+[2025-10-14 18:28:15] [INFO] Gathering SharePoint usage data...
+[2025-10-14 18:28:17] [INFO] SharePoint Debug: Found 53 sites, Total size: 1.22891140636057 GB
+[2025-10-14 18:28:17] [SUCCESS] SharePoint: 1.23 GB across 53 sites
+[2025-10-14 18:28:17] [SUCCESS] Top site: Bella Gibson (0 GB)
+[2025-10-14 18:28:17] [INFO] Gathering Microsoft Teams usage data...
+[2025-10-14 18:28:20] [INFO] Teams found: 33
+[2025-10-14 18:28:20] [SUCCESS] Teams: 33 teams
+[2025-10-14 18:28:20] [WARNING] Private Chat Cost: $0.00075 per message ($750 per million)
+[2025-10-14 18:28:20] [INFO] Gathering Microsoft Planner usage data...
+[2025-10-14 18:28:21] [INFO] Sampling Planner data from 5 groups...
+[2025-10-14 18:28:24] [SUCCESS] Planner: 0 plans with 0 tasks
+[2025-10-14 18:28:24] [INFO] Gathering Microsoft 365 Groups usage data...
+[2025-10-14 18:28:24] [SUCCESS] Groups: 38 total
+[2025-10-14 18:28:24] [INFO] Gathering sites and OneDrive counts...
+[2025-10-14 18:28:26] [SUCCESS] OneDrive Accounts: 6
+[2025-10-14 18:28:26] [SUCCESS] SharePoint Sites: 53
+[2025-10-14 18:28:26] [SUCCESS] Teams Sites: 33
+[2025-10-14 18:28:26] [SUCCESS] Total Sites: 86
+[2025-10-14 18:28:26] [INFO] Calculating growth analysis...
+[2025-10-14 18:28:26] [SUCCESS] Current total size: 5.09 GB
+[2025-10-14 18:28:26] [INFO] Analyzing Microsoft 365 licensing...
+[2025-10-14 18:28:26] [INFO] Analyzing mailbox types and shared mailboxes...
+[2025-10-14 18:28:28] [SUCCESS] Total Mailboxes: 6
+[2025-10-14 18:28:28] [SUCCESS] Regular Mailboxes: 6
+[2025-10-14 18:28:28] [SUCCESS] Shared Mailboxes: 0
+[2025-10-14 18:28:28] [SUCCESS] Resource Mailboxes: 0
+[2025-10-14 18:28:28] [SUCCESS] 20% Allowance: 0 shared mailboxes (20% of 0 licensed users)
+[2025-10-14 18:28:28] [SUCCESS] Licensed Users: 0
+[2025-10-14 18:28:28] [SUCCESS] HYCU Entitlement: 0 GB
+[2025-10-14 18:28:28] [SUCCESS] Current Usage: 5.09 GB
+[2025-10-14 18:28:28] [WARNING] Additional Licenses Needed: 1
+[2025-10-14 18:28:28] [INFO] Generating backup recommendations...
+[2025-10-14 18:28:28] [SUCCESS] Backup recommendations generated
+[2025-10-14 18:28:28] [INFO] Generating cost analysis...
+[2025-10-14 18:28:28] [SUCCESS] Storage: 5.09 GB → 3.054 GB (compressed) → 3.6648 GB (with growth)
+[2025-10-14 18:28:28] [SUCCESS] Monthly Storage Cost: 0.07 (([math]::Round(0.879552, 2)) annually)
+[2025-10-14 18:28:28] [SUCCESS] Worker Node Cost: 0.04/month (([math]::Round(0.4771875, 2)) annually) - based on 0 TB tenant size
+[2025-10-14 18:28:28] [SUCCESS] Per-User Costs: Storage=([math]::Round(0.00431152941176471, 2)), Worker Node=([math]::Round(0.00233915441176471, 2)), Total=([math]::Round(0.00665068382352941, 2))
+[2025-10-14 18:28:28] [SUCCESS] Total Monthly Cost: 0.11 (([math]::Round(1.3567395, 2)) annually)
+[2025-10-14 18:28:28] [INFO] Generating HTML report...
+[2025-10-14 18:28:28] [SUCCESS] Report generated: ./test-new-directory/HYCU-M365-Sizing-2025-10-14-1828.html
+[2025-10-14 18:28:28] [HEADER] =====================================
+[2025-10-14 18:28:28] [SUCCESS] Analysis completed successfully!
+[2025-10-14 18:28:28] [INFO] Duration: 0.41 minutes
+[2025-10-14 18:28:28] [SUCCESS] Report saved to: ./test-new-directory/HYCU-M365-Sizing-2025-10-14-1828.html
+[2025-10-14 18:28:28] [HEADER] =====================================
+[2025-10-14 18:28:28] [INFO] Disconnected from Microsoft Graph

@@ -1,0 +1,61 @@
+[2025-10-14 18:02:59] [HEADER] Starting HYCU M365 Sizing Tool v1.0
+[2025-10-14 18:02:59] [HEADER] =====================================
+[2025-10-14 18:02:59] [INFO] Checking for required PowerShell modules...
+[2025-10-14 18:02:59] [SUCCESS] Microsoft.Graph.Reports is already installed
+[2025-10-14 18:02:59] [SUCCESS] Microsoft.Graph.Users is already installed
+[2025-10-14 18:02:59] [SUCCESS] Microsoft.Graph.Groups is already installed
+[2025-10-14 18:02:59] [SUCCESS] Microsoft.Graph.Teams is already installed
+[2025-10-14 18:02:59] [SUCCESS] Microsoft.Graph.Sites is already installed
+[2025-10-14 18:02:59] [SUCCESS] ExchangeOnlineManagement is already installed
+[2025-10-14 18:02:59] [INFO] Authenticating to Microsoft Graph API...
+[2025-10-14 18:04:59] [SUCCESS] Connected using interactive authentication
+[2025-10-14 18:04:59] [INFO] Gathering tenant information...
+[2025-10-14 18:05:01] [SUCCESS] Tenant: 
+[2025-10-14 18:05:01] [INFO] Gathering user statistics...
+[2025-10-14 18:05:02] [SUCCESS] Total Users: 0 (Enabled: 0, Guests: 0)
+[2025-10-14 18:05:02] [INFO] Gathering Exchange Online usage data...
+[2025-10-14 18:05:02] [INFO] Exchange Debug: Found 0 mailboxes, Total size: 0 GB
+[2025-10-14 18:05:02] [ERROR] Failed to get Exchange usage: Attempted to divide by zero.
+[2025-10-14 18:05:02] [INFO] Gathering OneDrive usage data...
+[2025-10-14 18:05:02] [INFO] OneDrive Debug: Found 0 accounts, Total size: 0 GB
+[2025-10-14 18:05:02] [ERROR] Failed to get OneDrive usage: Attempted to divide by zero.
+[2025-10-14 18:05:02] [INFO] Gathering SharePoint usage data...
+[2025-10-14 18:05:02] [INFO] SharePoint Debug: Found 0 sites, Total size: 0 GB
+[2025-10-14 18:05:02] [ERROR] Failed to get SharePoint usage: Attempted to divide by zero.
+[2025-10-14 18:05:02] [INFO] Gathering Microsoft Teams usage data...
+[2025-10-14 18:05:06] [INFO] Teams found: 0
+[2025-10-14 18:05:06] [SUCCESS] Teams: 0 teams
+[2025-10-14 18:05:06] [WARNING] Private Chat Cost: $0.00075 per message ($750 per million)
+[2025-10-14 18:05:06] [INFO] Gathering Microsoft Planner usage data...
+[2025-10-14 18:05:07] [INFO] Sampling Planner data from 0 groups...
+[2025-10-14 18:05:07] [SUCCESS] Planner: 0 plans with 0 tasks
+[2025-10-14 18:05:07] [INFO] Gathering Microsoft 365 Groups usage data...
+[2025-10-14 18:05:07] [SUCCESS] Groups: 0 total
+[2025-10-14 18:05:07] [INFO] Gathering sites and OneDrive counts...
+[2025-10-14 18:05:07] [SUCCESS] OneDrive Accounts: 0
+[2025-10-14 18:05:07] [SUCCESS] SharePoint Sites: 0
+[2025-10-14 18:05:07] [SUCCESS] Teams Sites: 0
+[2025-10-14 18:05:07] [SUCCESS] Total Sites: 0
+[2025-10-14 18:05:07] [INFO] Calculating growth analysis...
+[2025-10-14 18:05:07] [SUCCESS] Current total size: 0 GB
+[2025-10-14 18:05:07] [INFO] Analyzing Microsoft 365 licensing...
+[2025-10-14 18:05:07] [INFO] Analyzing mailbox types and shared mailboxes...
+[2025-10-14 18:05:07] [SUCCESS] Total Mailboxes: 0
+[2025-10-14 18:05:07] [SUCCESS] Regular Mailboxes: 0
+[2025-10-14 18:05:07] [SUCCESS] Shared Mailboxes: 0
+[2025-10-14 18:05:07] [SUCCESS] Resource Mailboxes: 0
+[2025-10-14 18:05:07] [SUCCESS] 20% Allowance: 0 shared mailboxes (20% of 0 licensed users)
+[2025-10-14 18:05:07] [SUCCESS] Licensed Users: 0
+[2025-10-14 18:05:07] [SUCCESS] HYCU Entitlement: 0 GB
+[2025-10-14 18:05:07] [SUCCESS] Current Usage: 0 GB
+[2025-10-14 18:05:07] [INFO] Generating backup recommendations...
+[2025-10-14 18:05:07] [SUCCESS] Backup recommendations generated
+[2025-10-14 18:05:07] [INFO] Generating cost analysis...
+[2025-10-14 18:05:07] [WARNING] No storage data available - providing estimated costs based on user count
+[2025-10-14 18:05:07] [INFO] Estimated storage: 0 GB (5 GB per user)
+[2025-10-14 18:05:07] [ERROR] Failed to generate cost analysis: Attempted to divide by zero.
+[2025-10-14 18:05:07] [INFO] Generating HTML report...
+[2025-10-14 18:05:07] [ERROR] Script execution failed: Attempted to divide by zero.
+[2025-10-14 18:05:07] [INFO] Disconnected from Microsoft Graph
+[2025-10-14 18:05:07] [ERROR] PowerShell Error: Attempted to divide by zero.
+Exception Details: System.DivideByZeroException: Attempted to divide by zero.

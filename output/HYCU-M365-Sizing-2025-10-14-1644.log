@@ -1,0 +1,74 @@
+[2025-10-14 16:44:55] [HEADER] Starting HYCU M365 Sizing Tool v1.0
+[2025-10-14 16:44:55] [HEADER] =====================================
+[2025-10-14 16:44:55] [INFO] Checking for required PowerShell modules...
+[2025-10-14 16:44:55] [SUCCESS] Microsoft.Graph.Reports is already installed
+[2025-10-14 16:44:55] [SUCCESS] Microsoft.Graph.Users is already installed
+[2025-10-14 16:44:55] [SUCCESS] Microsoft.Graph.Groups is already installed
+[2025-10-14 16:44:55] [SUCCESS] Microsoft.Graph.Teams is already installed
+[2025-10-14 16:44:55] [SUCCESS] Microsoft.Graph.Sites is already installed
+[2025-10-14 16:44:55] [SUCCESS] ExchangeOnlineManagement is already installed
+[2025-10-14 16:44:55] [INFO] Authenticating to Microsoft Graph API...
+[2025-10-14 16:45:02] [SUCCESS] Connected using interactive authentication
+[2025-10-14 16:45:02] [INFO] Gathering tenant information...
+[2025-10-14 16:45:04] [SUCCESS] Tenant: MSFT
+[2025-10-14 16:45:04] [INFO] Gathering user statistics...
+[2025-10-14 16:45:06] [SUCCESS] Total Users: 95 (Enabled: 87, Guests: 10)
+[2025-10-14 16:45:06] [INFO] Gathering Exchange Online usage data...
+[2025-10-14 16:45:10] [INFO] Exchange Debug: Found 69 mailboxes, Total size: 59.303467111662 GB
+[2025-10-14 16:45:10] [SUCCESS] Exchange: 59.3 GB across 69 mailboxes
+[2025-10-14 16:45:10] [SUCCESS] Top mailbox: C1403AC6C3CE2B07EC09382CF6C82159 (0.09 GB)
+[2025-10-14 16:45:10] [INFO] Gathering OneDrive usage data...
+[2025-10-14 16:45:11] [INFO] OneDrive Debug: Found 57 accounts, Total size: 15.6423566350713 GB
+[2025-10-14 16:45:12] [SUCCESS] OneDrive: 15.64 GB across 57 accounts
+[2025-10-14 16:45:12] [SUCCESS] Top OneDrive: 927E927BB991E835D804C82FDC81F53C (0 GB)
+[2025-10-14 16:45:12] [INFO] Gathering SharePoint usage data...
+[2025-10-14 16:45:13] [INFO] SharePoint Debug: Found 744 sites, Total size: 75.4998238543049 GB
+[2025-10-14 16:45:13] [SUCCESS] SharePoint: 75.5 GB across 744 sites
+[2025-10-14 16:45:13] [SUCCESS] Top site: 7A2878369DCC5EC4E1B0C31BCAEAC9E1 (0 GB)
+[2025-10-14 16:45:13] [INFO] Gathering Microsoft Teams usage data...
+[2025-10-14 16:46:04] [SUCCESS] Teams: 38 teams with 173 channels
+[2025-10-14 16:46:04] [INFO] Message counting skipped (requires ChannelMessage.Read.All permission)
+[2025-10-14 16:46:04] [WARNING] Private Chat Cost: privateChatCostPerMessage per message (costPerMillionMessages per million)
+[2025-10-14 16:46:04] [INFO] Gathering Microsoft Planner usage data...
+[2025-10-14 16:46:37] [SUCCESS] Planner: 1 plans with 12 tasks
+[2025-10-14 16:46:37] [INFO] Gathering Microsoft 365 Groups usage data...
+[2025-10-14 16:46:37] [SUCCESS] Groups: 59 total (Distribution: 0, Security: 0, Unified: 59)
+[2025-10-14 16:46:37] [INFO] Gathering sites and OneDrive counts...
+[2025-10-14 16:46:43] [SUCCESS] OneDrive Accounts: 57
+[2025-10-14 16:46:43] [SUCCESS] SharePoint Sites: 744
+[2025-10-14 16:46:43] [SUCCESS] Teams Sites: 38
+[2025-10-14 16:46:43] [SUCCESS] Total Sites: 782
+[2025-10-14 16:46:43] [INFO] Calculating growth analysis...
+[2025-10-14 16:46:43] [SUCCESS] Current total size: 150.44 GB
+[2025-10-14 16:46:43] [INFO] Analyzing Microsoft 365 licensing...
+[2025-10-14 16:46:44] [INFO] Power Automate Free Users: 16 (excluded from HYCU licensing)
+[2025-10-14 16:46:44] [INFO] Analyzing mailbox types and archive mailboxes...
+[2025-10-14 16:46:44] [SUCCESS] Total Mailboxes: 69
+[2025-10-14 16:46:44] [SUCCESS] Regular Mailboxes: 69
+[2025-10-14 16:46:44] [SUCCESS] Shared Mailboxes: 0
+[2025-10-14 16:46:44] [SUCCESS] Resource Mailboxes: 0
+[2025-10-14 16:46:44] [SUCCESS] Archive Mailboxes: 17 (24.6%)
+[2025-10-14 16:46:44] [WARNING] Excess Archive Mailboxes: 3 (over 20% threshold)
+[2025-10-14 16:46:44] [SUCCESS] Licensed Users: 25
+[2025-10-14 16:46:44] [SUCCESS] HYCU Entitlement: 1250 GB
+[2025-10-14 16:46:44] [SUCCESS] Current Usage: 150.44 GB
+[2025-10-14 16:46:44] [INFO] Generating backup recommendations...
+[2025-10-14 16:46:44] [SUCCESS] Backup recommendations generated
+[2025-10-14 16:46:44] [INFO] Generating cost analysis...
+[2025-10-14 16:46:44] [SUCCESS] Storage: 150.44 GB → 90.264 GB (compressed) → 108.3168 GB (with growth)
+[2025-10-14 16:46:44] [SUCCESS] Monthly Storage Cost: 2.17 (([math]::Round(25.996032, 2)) annually)
+[2025-10-14 16:46:44] [SUCCESS] Worker Node Cost: 1.18/month (([math]::Round(14.10375, 2)) annually) - based on 0.15 TB tenant size
+[2025-10-14 16:46:44] [SUCCESS] Per-User Costs: Storage=([math]::Round(0.0249004137931034, 2)), Worker Node=([math]::Round(0.0135093390804598, 2)), Total=([math]::Round(0.0384097528735632, 2))
+[2025-10-14 16:46:44] [SUCCESS] Total Monthly Cost: 3.34 (([math]::Round(40.099782, 2)) annually)
+[2025-10-14 16:46:44] [INFO] Generating HTML report...
+[2025-10-14 16:46:44] [ERROR] Script execution failed: Error formatting a string: Input string was not in a correct format. Failure to parse near offset 211. Expected an ASCII digit..
+[2025-10-14 16:46:44] [INFO] Disconnected from Microsoft Graph
+[2025-10-14 16:46:44] [ERROR] PowerShell Error: Error formatting a string: Input string was not in a correct format. Failure to parse near offset 211. Expected an ASCII digit..
+Exception Details: System.Management.Automation.RuntimeException: Error formatting a string: Input string was not in a correct format. Failure to parse near offset 211. Expected an ASCII digit..
+   at System.Management.Automation.ExceptionHandlingOps.CheckActionPreference(FunctionContext funcContext, Exception exception)
+   at System.Management.Automation.Interpreter.ActionCallInstruction`2.Run(InterpretedFrame frame)
+   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)
+   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)
+   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)
+   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)
+   at System.Management.Automation.Interpreter.EnterTryCatchFinallyInstruction.Run(InterpretedFrame frame)
