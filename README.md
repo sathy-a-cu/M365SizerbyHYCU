@@ -320,6 +320,115 @@ Check the `sample-outputs` folder for example reports showing:
 - Top 5 analysis
 - Teams cost analysis
 
+## 💰 Cost Analysis Assumptions
+
+The HYCU M365 Sizing Tool uses specific assumptions for cost calculations. Understanding these assumptions is crucial for accurate backup planning and budgeting.
+
+### **📊 Storage Cost Calculations**
+
+**Base Storage Costs:**
+- **Storage Cost:** $0.02 per GB per month
+- **Annual Storage Cost:** $0.24 per GB per year
+- **Calculation Method:** Based on compressed and projected storage requirements
+
+**Data Processing Assumptions:**
+- **Compression Rate:** 40% (data compression reduces storage requirements by 40%)
+- **Growth Rate:** 20% (annual data growth projection)
+- **Retention Period:** 1 year (standard backup retention)
+- **Daily Change Rate:** 0.2% (daily data change rate for incremental backups)
+
+**Storage Calculation Formula:**
+```
+Original Storage → Compressed Storage (40% reduction) → Projected Storage (20% growth)
+Example: 100 GB → 60 GB (compressed) → 72 GB (with growth)
+```
+
+### **🖥️ Worker Node Costs**
+
+**Worker Node Pricing:**
+- **Cost per TB per Month:** $8
+- **Calculation Base:** Pre-compression tenant size (original data size)
+- **Scaling Factor:** Based on total tenant size in TB
+- **Purpose:** Processing power for backup operations
+
+**Worker Node Calculation:**
+```
+Worker Node Cost = (Tenant Size in TB) × $8 per TB per month
+$5-$8 is the typical range. Sizer takes the conservative route. 
+```
+
+### **📈 Growth Projections**
+
+**Growth Rate Options:**
+- **Default Annual Growth:** 30% (customizable via `-AnnualGrowth` parameter)
+- **Standard Growth Rates:** 10%, 20%, and custom rate
+- **Projection Method:** Linear growth calculation over 1 year
+
+**Growth Calculation:**
+```
+Projected Size = Current Size × (1 + Growth Rate / 100)
+```
+
+### **🔑 HYCU Licensing Model**
+
+**HYCU Entitlement Structure:**
+- **Base Entitlement:** 50 GB per licensed user
+- **Shared Mailbox Allowance:** 20% of licensed users (free shared mailboxes)
+- **Additional License Cost:** Based on excess capacity requirements
+
+**Licensing Calculation:**
+```
+HYCU Entitlement = Licensed Users × 50 GB
+Additional Licenses = Ceiling((Current Usage - Entitlement) / 50 GB)
+```
+
+### **💬 Microsoft Teams Cost Implications**
+
+**Teams Private Chat Protection:**
+- **Cost per Message:** $0.00075 per message/notification
+- **Cost per Million Messages:** $750
+- **Impact:** Additional Microsoft licensing costs for Teams private chat protection
+- **Consideration:** Factor into backup planning for Teams-heavy environments
+
+### **⚙️ Customizable Parameters**
+
+**Script Parameters for Cost Adjustments:**
+```powershell
+# Custom growth rate (default: 30%)
+.\Get-HYCUM365SizingInfo.ps1 -AnnualGrowth 25
+
+# Custom analysis period (default: 30 days)
+.\Get-HYCUM365SizingInfo.ps1 -Period 60
+```
+
+### **📋 Cost Breakdown Example**
+
+For a tenant with 100 users and 500 GB of data:
+
+| Component | Calculation | Monthly Cost |
+|-----------|-------------|--------------|
+| **Storage (Compressed + Growth)** | 500 GB → 300 GB → 360 GB × $0.02 | $7.20 |
+| **Worker Node** | 0.49 TB × $8 | $3.92 |
+| **Total Monthly** | | $11.12 |
+| **Total Annual** | $11.12 × 12 | $133.44 |
+| **Per User Cost** | $133.44 ÷ 100 users | $1.33/user/year |
+
+### **🔍 Understanding Cost Variations**
+
+**Factors that affect costs:**
+- **Data Growth Rate:** Higher growth = higher projected costs
+- **Compression Efficiency:** Better compression = lower storage costs
+- **Tenant Size:** Larger tenants = higher worker node costs
+- **Teams Usage:** Heavy Teams usage = additional Microsoft licensing costs
+
+**Cost Optimization Tips:**
+- Monitor actual data growth vs. projections
+- Consider data archiving strategies
+- Evaluate Teams usage patterns
+- Review shared mailbox allocation
+
+---
+
 ## 📞 Support
 
 **Self-Help Resources:**

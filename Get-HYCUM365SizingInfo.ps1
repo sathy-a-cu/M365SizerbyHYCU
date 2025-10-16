@@ -6,7 +6,7 @@
 
 .DESCRIPTION
     This script analyzes Microsoft 365 tenant data to provide comprehensive sizing information
-    for backup planning, including storage usage, user counts, growth projections, and backup recommendations.
+    for backup planning, including storage usage, user counts, and growth projections.
 
 .PARAMETER UseAppAccess
     Use application-based authentication instead of interactive login
@@ -190,7 +190,6 @@ $script:ReportData = @{
     ArchiveData = @{}
     RecoverableItemsData = @{}
     GrowthAnalysis = @{}
-    BackupRecommendations = @{}
     CostAnalysis = @{}
     LicensingInfo = @{}
     SitesAndOneDriveData = @{}
@@ -863,30 +862,6 @@ function Get-GrowthAnalysis {
     }
 }
 
-# Function to generate backup recommendations
-function Get-BackupRecommendations {
-    Write-ColorOutput "Generating backup recommendations..." "INFO"
-    
-    try {
-        $totalSize = $script:ReportData.GrowthAnalysis.CurrentTotalSizeGB
-        $userCount = $script:ReportData.TenantInfo.UserCounts.EnabledUsers
-        
-        $recommendations = @{
-            BackupFrequency = if ($totalSize -gt 1000) { "Daily" } elseif ($totalSize -gt 100) { "Daily" } else { "Weekly" }
-            RetentionPolicy = if ($userCount -gt 1000) { "7 years" } elseif ($userCount -gt 100) { "3 years" } else { "1 year" }
-            StorageEstimate = [math]::Round($totalSize * 1.5, 2)  # 50% overhead for backup storage
-            CriticalData = @("Exchange", "OneDrive", "SharePoint")
-            BackupWindow = "Off-hours (2 AM - 6 AM)"
-        }
-        
-        $script:ReportData.BackupRecommendations = $recommendations
-        
-        Write-ColorOutput "Backup recommendations generated" "SUCCESS"
-    }
-    catch {
-        Write-ColorOutput "Failed to generate backup recommendations: $($_.Exception.Message)" "ERROR"
-    }
-}
 
 # Function to generate cost analysis
 function Get-CostAnalysis {
@@ -1189,7 +1164,7 @@ function New-HTMLReport {
             <div class="section">
                 <h2>🏆 Top 5 by Size</h2>
                 <div class="warning">
-                    <strong>📝 Privacy Note:</strong> The names shown are anonymized for privacy.
+                    <strong>📝 Privacy Note:</strong> Your tenant settings may anonymize user names for privacy.
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
                     <div>
@@ -1485,7 +1460,6 @@ try {
     # Perform analysis
     Get-GrowthAnalysis
     Get-LicensingInformation
-    Get-BackupRecommendations
     Get-CostAnalysis
     
     # Generate report

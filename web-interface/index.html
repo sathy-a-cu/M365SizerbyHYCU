@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HYCU M365 Sizing Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -163,6 +164,32 @@
             margin-right: 10px;
         }
 
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 1;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            font-weight: 300;
+        }
+        
+
         .upload-area {
             border: 3px dashed #667eea;
             border-radius: 20px;
@@ -275,7 +302,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-cloud"></i> HYCU M365 Sizing Dashboard</h1>
+            <h1>HYCU M365 Sizing Dashboard</h1>
             <p>Comprehensive Microsoft 365 Tenant Analysis for Backup Planning</p>
         </div>
 
@@ -289,7 +316,7 @@
                 <h3>Drag & Drop your HTML report here</h3>
                 <p>Or click to browse and select your HYCU M365 Sizing report</p>
                 <input type="file" id="file-input" accept=".html" style="display: none;">
-                <button class="btn" onclick="document.getElementById('file-input').click()">
+                <button class="btn" id="browse-button">
                     <i class="fas fa-folder-open"></i> Browse Files
                 </button>
             </div>
@@ -304,6 +331,7 @@
         </div>
 
         <div id="dashboard-section" class="hidden">
+            <!-- Level 1: Tenant, Storage, Licensing -->
             <div class="dashboard-grid">
                 <!-- Tenant Overview Card -->
                 <div class="card">
@@ -331,11 +359,11 @@
                     </div>
                 </div>
 
-                <!-- Storage Analysis Card -->
+                <!-- Storage Overview Card -->
                 <div class="card">
                     <div class="card-header">
                         <i class="fas fa-database card-icon"></i>
-                        <h2 class="card-title">Storage Analysis</h2>
+                        <h2 class="card-title">Storage Overview</h2>
                     </div>
                     <div class="metric-grid">
                         <div class="metric">
@@ -356,79 +384,209 @@
                         </div>
                     </div>
                     <div class="chart-container">
-                        <canvas id="storage-chart"></canvas>
+                        <canvas id="storage-distribution-chart"></canvas>
+                    </div>
+                    <div class="info">
+                        <h4><i class="fas fa-info-circle"></i> Storage Distribution</h4>
+                        <p>This chart displays the proportional distribution of your tenant's storage across Exchange, OneDrive, and SharePoint services, showing the ratio breakdown (e.g., 30:30:40).</p>
                     </div>
                 </div>
 
-                <!-- Growth Projections Card -->
+                <!-- HYCU License Sizer Card -->
                 <div class="card">
                     <div class="card-header">
-                        <i class="fas fa-chart-line card-icon"></i>
-                        <h2 class="card-title">Growth Projections</h2>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="growth-chart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Backup Recommendations Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-shield-alt card-icon"></i>
-                        <h2 class="card-title">Backup Recommendations</h2>
-                    </div>
-                    <div id="backup-recommendations">
-                        <!-- Recommendations will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Cost Analysis Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-dollar-sign card-icon"></i>
-                        <h2 class="card-title">Cost Analysis</h2>
+                        <i class="fas fa-key card-icon"></i>
+                        <h2 class="card-title">HYCU License Sizer</h2>
                     </div>
                     <div class="metric-grid">
                         <div class="metric">
-                            <div class="metric-value" id="monthly-storage-cost">-</div>
-                            <div class="metric-label">Monthly Storage</div>
+                            <div class="metric-value" id="licensed-users">-</div>
+                            <div class="metric-label">Licensed Users</div>
                         </div>
                         <div class="metric">
-                            <div class="metric-value" id="monthly-user-cost">-</div>
-                            <div class="metric-label">Monthly Users</div>
+                            <div class="metric-value" id="hycu-entitlement">-</div>
+                            <div class="metric-label">HYCU Entitlement (GB)</div>
                         </div>
                         <div class="metric">
-                            <div class="metric-value" id="total-monthly-cost">-</div>
-                            <div class="metric-label">Total Monthly</div>
+                            <div class="metric-value" id="current-usage">-</div>
+                            <div class="metric-label">Current Usage (GB)</div>
                         </div>
                         <div class="metric">
-                            <div class="metric-value" id="annual-cost">-</div>
-                            <div class="metric-label">Annual Cost</div>
+                            <div class="metric-value" id="additional-licenses">-</div>
+                            <div class="metric-label">Additional Licenses</div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Teams Analysis Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-users card-icon"></i>
-                        <h2 class="card-title">Teams Analysis</h2>
+            <!-- Level 2: Mailbox, Sites, Teams -->
+            <div class="dashboard-grid">
+                <!-- Analysis Section - Side by Side -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <!-- Mailbox Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-envelope card-icon"></i>
+                            <h2 class="card-title">Mailbox Overview</h2>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="total-mailboxes">-</div>
+                                <div class="metric-label">Total Mailboxes</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="regular-mailboxes">-</div>
+                                <div class="metric-label">Regular Mailboxes</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="shared-mailboxes">-</div>
+                                <div class="metric-label">Shared Mailboxes</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="resource-mailboxes">-</div>
+                                <div class="metric-label">Resource Mailboxes</div>
+                            </div>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="archive-mailboxes">-</div>
+                                <div class="metric-label">Archive Mailboxes</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="archive-percentage">-</div>
+                                <div class="metric-label">Archive %</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="shared-allowance">-</div>
+                                <div class="metric-label">20% Allowance</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="excess-shared">-</div>
+                                <div class="metric-label">Excess Shared</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="metric-grid">
-                        <div class="metric">
-                            <div class="metric-value" id="total-teams">-</div>
-                            <div class="metric-label">Total Teams</div>
+
+                    <!-- Sites & OneDrive Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-globe card-icon"></i>
+                            <h2 class="card-title">Sites & OneDrive Overview</h2>
                         </div>
-                        <div class="metric">
-                            <div class="metric-value" id="total-channels">-</div>
-                            <div class="metric-label">Total Channels</div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="onedrive-accounts">-</div>
+                                <div class="metric-label">OneDrive Accounts</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="sharepoint-sites">-</div>
+                                <div class="metric-label">SharePoint Sites</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="teams-sites">-</div>
+                                <div class="metric-label">Teams Sites</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="total-sites">-</div>
+                                <div class="metric-label">Total Sites</div>
+                            </div>
                         </div>
-                        <div class="metric">
-                            <div class="metric-value" id="avg-channels">-</div>
-                            <div class="metric-label">Avg Channels/Team</div>
+                    </div>
+
+                    <!-- Teams Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-users card-icon"></i>
+                            <h2 class="card-title">Teams Overview</h2>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="total-teams">-</div>
+                                <div class="metric-label">Total Teams</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="total-groups">-</div>
+                                <div class="metric-label">Total Groups</div>
+                            </div>
+                        </div>
+                        <div class="warning">
+                            <h4><i class="fas fa-exclamation-triangle"></i> Teams Private Chat Costs</h4>
+                            <p><strong>Cost per message:</strong> <span id="teams-cost-per-message">-</span></p>
+                            <p><strong>Cost per million messages:</strong> <span id="teams-cost-per-million">-</span></p>
+                            <p>Consider this additional cost when planning Teams private chat protection.</p>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Level 3: Top 5 Analysis -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-trophy card-icon"></i>
+                    <h2 class="card-title">Top 5 by Size</h2>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4>📧 Top 5 Mailboxes</h4>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="top5-mailboxes-chart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>📁 Top 5 OneDrive</h4>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="top5-onedrive-chart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>🌐 Top 5 SharePoint</h4>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="top5-sharepoint-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level 4: Cost Estimation -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-dollar-sign card-icon"></i>
+                    <h2 class="card-title">Cost Estimation</h2>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-value" id="monthly-storage-cost">-</div>
+                        <div class="metric-label">Monthly Storage</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="monthly-user-cost">-</div>
+                        <div class="metric-label">Monthly Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="total-monthly-cost">-</div>
+                        <div class="metric-label">Total Monthly</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="annual-cost">-</div>
+                        <div class="metric-label">Annual Cost</div>
+                    </div>
+                </div>
+                <div class="info">
+                    <h4><i class="fas fa-info-circle"></i> Cost Estimation Assumptions</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li><strong>Storage Cost:</strong> $0.02 per GB per month</li>
+                        <li><strong>Compression Rate:</strong> 40% (data compression)</li>
+                        <li><strong>Growth Rate:</strong> 20% (annual projection)</li>
+                        <li><strong>Worker Node Cost:</strong> $8 per TB per month</li>
+                        <li><strong>Retention Period:</strong> 1 year</li>
+                        <li><strong>Daily Change Rate:</strong> 0.2%</li>
+                    </ul>
+                </div>
+            </div>
+
+
+
+
             </div>
 
             <div class="card">
@@ -440,11 +598,8 @@
                     <button class="btn" onclick="exportToPDF()">
                         <i class="fas fa-file-pdf"></i> Export to PDF
                     </button>
-                    <button class="btn btn-secondary" onclick="exportToExcel()">
-                        <i class="fas fa-file-excel"></i> Export to Excel
-                    </button>
-                    <button class="btn btn-success" onclick="generateBackupPlan()">
-                        <i class="fas fa-cog"></i> Generate Backup Plan
+                    <button class="btn btn-success" onclick="viewDetailedReport()">
+                        <i class="fas fa-chart-bar"></i> View Detailed Report
                     </button>
                 </div>
             </div>
@@ -456,6 +611,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>
