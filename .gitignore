@@ -1,5 +1,16 @@
-# Output directory - generated files
+# Output directory - generated files (NEVER track these)
 output/
+output/*
+!output/.gitkeep
+
+# Generated HTML reports
+*.html
+!sample-outputs/*.html
+!web-interface/*.html
+
+# Log files
+*.log
+*.log.*
 
 # macOS
 .DS_Store
@@ -10,9 +21,22 @@ output/
 ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-
 # Temporary files
 *.tmp
 *.temp
+*~
+
+# Backup files
+*.bak
+*.backup
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
