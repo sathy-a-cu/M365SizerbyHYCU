@@ -3,200 +3,605 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HYCU M365 Sizing Dashboard - Sample</title>
+    <title>HYCU M365 Sizing Dashboard - Sample Interface</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        .header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); text-align: center; }
-        .header h1 { font-size: 3em; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; margin-bottom: 30px; }
-        .card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
-        .card-header { display: flex; align-items: center; margin-bottom: 20px; }
-        .card-icon { font-size: 2em; margin-right: 15px; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .card-title { font-size: 1.5em; font-weight: bold; color: #333; }
-        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 20px 0; }
-        .metric { text-align: center; padding: 15px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px; border: 1px solid #e9ecef; }
-        .metric-value { font-size: 1.8em; font-weight: bold; color: #667eea; margin-bottom: 5px; }
-        .metric-label { font-size: 0.9em; color: #666; }
-        .chart-container { position: relative; height: 300px; margin: 20px 0; background: #f8f9fa; border-radius: 15px; display: flex; align-items: center; justify-content: center; }
-        .chart-placeholder { text-align: center; color: #666; }
-        .recommendation { background: linear-gradient(135deg, #d4edda, #c3e6cb); border: 1px solid #c3e6cb; border-radius: 15px; padding: 20px; margin: 15px 0; border-left: 5px solid #28a745; }
-        .recommendation h4 { color: #155724; margin-bottom: 10px; display: flex; align-items: center; }
-        .recommendation h4 i { margin-right: 10px; }
-        .btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: all 0.3s ease; text-decoration: none; display: inline-block; margin: 10px; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
-        .btn-secondary { background: linear-gradient(135deg, #6c757d, #495057); }
-        .btn-success { background: linear-gradient(135deg, #28a745, #20c997); }
-        .footer { text-align: center; padding: 30px; color: rgba(255, 255, 255, 0.8); }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            font-size: 2em;
+            margin-right: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .recommendation {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border: 1px solid #c3e6cb;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #28a745;
+        }
+
+        .recommendation h4 {
+            color: #155724;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .recommendation h4 i {
+            margin-right: 10px;
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 1px solid #ffeaa7;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #ffc107;
+        }
+
+        .warning h4 {
+            color: #856404;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .warning h4 i {
+            margin-right: 10px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 1;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            font-weight: 300;
+        }
+        
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #28a745;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-cloud"></i> HYCU M365 Sizing Dashboard</h1>
+            <h1>HYCU M365 Sizing Dashboard</h1>
             <p>Comprehensive Microsoft 365 Tenant Analysis for Backup Planning</p>
         </div>
 
-        <div class="dashboard-grid">
-            <!-- Tenant Overview Card -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-building card-icon"></i>
-                    <h2 class="card-title">Tenant Overview</h2>
-                </div>
-                <div class="metric-grid">
-                    <div class="metric">
-                        <div class="metric-value">Contoso Corp</div>
-                        <div class="metric-label">Tenant Name</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">2,847</div>
-                        <div class="metric-label">Total Users</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">2,634</div>
-                        <div class="metric-label">Active Users</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">213</div>
-                        <div class="metric-label">Guest Users</div>
-                    </div>
-                </div>
+        <div id="upload-section" class="card">
+            <div class="card-header">
+                <i class="fas fa-upload card-icon"></i>
+                <h2 class="card-title">Upload Analysis Report</h2>
             </div>
-
-            <!-- Storage Analysis Card -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-database card-icon"></i>
-                    <h2 class="card-title">Storage Analysis</h2>
-                </div>
-                <div class="metric-grid">
-                    <div class="metric">
-                        <div class="metric-value">1,247.3</div>
-                        <div class="metric-label">Exchange (GB)</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">3,892.7</div>
-                        <div class="metric-label">OneDrive (GB)</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">1,456.2</div>
-                        <div class="metric-label">SharePoint (GB)</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">6,596.2</div>
-                        <div class="metric-label">Total (GB)</div>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-placeholder">
-                        <i class="fas fa-chart-pie" style="font-size: 3em; color: #667eea; margin-bottom: 10px;"></i>
-                        <p>Storage Distribution Chart</p>
-                        <small>Exchange: 18.9% | OneDrive: 59.0% | SharePoint: 22.1%</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Growth Projections Card -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-chart-line card-icon"></i>
-                    <h2 class="card-title">Growth Projections</h2>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-placeholder">
-                        <i class="fas fa-chart-bar" style="font-size: 3em; color: #667eea; margin-bottom: 10px;"></i>
-                        <p>Growth Projection Chart</p>
-                        <small>10%: 7,256 GB | 20%: 7,915 GB | 30%: 8,575 GB</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Backup Recommendations Card -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-shield-alt card-icon"></i>
-                    <h2 class="card-title">Backup Recommendations</h2>
-                </div>
-                <div class="recommendation">
-                    <h4><i class="fas fa-check-circle"></i> Recommended Backup Frequency: Daily</h4>
-                </div>
-                <div class="recommendation">
-                    <h4><i class="fas fa-check-circle"></i> Retention Policy: 7 years</h4>
-                </div>
-                <div class="recommendation">
-                    <h4><i class="fas fa-check-circle"></i> Estimated Backup Storage: 9,894.3 GB</h4>
-                </div>
-                <div class="recommendation">
-                    <h4><i class="fas fa-check-circle"></i> Recommended Backup Window: Off-hours (2 AM - 6 AM)</h4>
-                </div>
-            </div>
-
-            <!-- Cost Analysis Card -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-dollar-sign card-icon"></i>
-                    <h2 class="card-title">Cost Analysis</h2>
-                </div>
-                <div class="metric-grid">
-                    <div class="metric">
-                        <div class="metric-value">$659.62</div>
-                        <div class="metric-label">Monthly Storage</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">$5,268.00</div>
-                        <div class="metric-label">Monthly Users</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">$5,927.62</div>
-                        <div class="metric-label">Total Monthly</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">$71,131.44</div>
-                        <div class="metric-label">Annual Cost</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Teams Analysis Card -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-users card-icon"></i>
-                    <h2 class="card-title">Teams Analysis</h2>
-                </div>
-                <div class="metric-grid">
-                    <div class="metric">
-                        <div class="metric-value">187</div>
-                        <div class="metric-label">Total Teams</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">1,247</div>
-                        <div class="metric-label">Total Channels</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">6.7</div>
-                        <div class="metric-label">Avg Channels/Team</div>
-                    </div>
-                </div>
+            <div class="upload-area" id="upload-area">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 3em; color: #667eea; margin-bottom: 20px;"></i>
+                <h3>Drag & Drop your HTML report here</h3>
+                <p>Or click to browse and select your HYCU M365 Sizing report</p>
+                <input type="file" id="file-input" accept=".html" style="display: none;">
+                <button class="btn" id="browse-button">
+                    <i class="fas fa-folder-open"></i> Browse Files
+                </button>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-download card-icon"></i>
-                <h2 class="card-title">Export Options</h2>
+        <div id="loading-section" class="card hidden">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Processing your report...</h3>
+                <p>Please wait while we analyze your M365 sizing data</p>
             </div>
-            <div style="text-align: center;">
-                <button class="btn">
-                    <i class="fas fa-file-pdf"></i> Export to PDF
-                </button>
-                <button class="btn btn-secondary">
-                    <i class="fas fa-file-excel"></i> Export to Excel
-                </button>
-                <button class="btn btn-success">
-                    <i class="fas fa-cog"></i> Generate Backup Plan
-                </button>
+        </div>
+
+        <div id="dashboard-section" class="hidden">
+            <!-- Level 1: Tenant, Storage, Licensing -->
+            <div class="dashboard-grid">
+                <!-- Tenant Overview Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-building card-icon"></i>
+                        <h2 class="card-title">Tenant Overview</h2>
+                    </div>
+                    <div class="metric-grid">
+                        <div class="metric">
+                            <div class="metric-value" id="tenant-name">-</div>
+                            <div class="metric-label">Tenant Name</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="total-users">-</div>
+                            <div class="metric-label">Total Users</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="active-users">-</div>
+                            <div class="metric-label">Active Users</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="guest-users">-</div>
+                            <div class="metric-label">Guest Users</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Overview Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-database card-icon"></i>
+                        <h2 class="card-title">Storage Overview</h2>
+                    </div>
+                    <div class="metric-grid">
+                        <div class="metric">
+                            <div class="metric-value" id="exchange-size">-</div>
+                            <div class="metric-label">Exchange (GB)</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="onedrive-size">-</div>
+                            <div class="metric-label">OneDrive (GB)</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="sharepoint-size">-</div>
+                            <div class="metric-label">SharePoint (GB)</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="total-size">-</div>
+                            <div class="metric-label">Total (GB)</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="storage-distribution-chart"></canvas>
+                    </div>
+                    <div class="info">
+                        <h4><i class="fas fa-info-circle"></i> Storage Distribution</h4>
+                        <p>This chart displays the proportional distribution of your tenant's storage across Exchange, OneDrive, and SharePoint services, showing the ratio breakdown (e.g., 30:30:40).</p>
+                    </div>
+                </div>
+
+                <!-- HYCU License Sizer Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-key card-icon"></i>
+                        <h2 class="card-title">HYCU License Sizer</h2>
+                    </div>
+                    <div class="metric-grid">
+                        <div class="metric">
+                            <div class="metric-value" id="licensed-users">-</div>
+                            <div class="metric-label">Licensed Users</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="hycu-entitlement">-</div>
+                            <div class="metric-label">HYCU Entitlement (GB)</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="current-usage">-</div>
+                            <div class="metric-label">Current Usage (GB)</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="additional-licenses">-</div>
+                            <div class="metric-label">Additional Licenses</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level 2: Mailbox, Sites, Teams -->
+            <div class="dashboard-grid">
+                <!-- Analysis Section - Side by Side -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <!-- Mailbox Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-envelope card-icon"></i>
+                            <h2 class="card-title">Mailbox Overview</h2>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="total-mailboxes">-</div>
+                                <div class="metric-label">Total Mailboxes</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="regular-mailboxes">-</div>
+                                <div class="metric-label">Regular Mailboxes</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="shared-mailboxes">-</div>
+                                <div class="metric-label">Shared Mailboxes</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="resource-mailboxes">-</div>
+                                <div class="metric-label">Resource Mailboxes</div>
+                            </div>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="archive-mailboxes">-</div>
+                                <div class="metric-label">Archive Mailboxes</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="archive-percentage">-</div>
+                                <div class="metric-label">Archive %</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="shared-allowance">-</div>
+                                <div class="metric-label">20% Allowance</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="excess-shared">-</div>
+                                <div class="metric-label">Excess Shared</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sites & OneDrive Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-globe card-icon"></i>
+                            <h2 class="card-title">Sites & OneDrive Overview</h2>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="onedrive-accounts">-</div>
+                                <div class="metric-label">OneDrive Accounts</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="sharepoint-sites">-</div>
+                                <div class="metric-label">SharePoint Sites</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="teams-sites">-</div>
+                                <div class="metric-label">Teams Sites</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="total-sites">-</div>
+                                <div class="metric-label">Total Sites</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Teams Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-users card-icon"></i>
+                            <h2 class="card-title">Teams Overview</h2>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric">
+                                <div class="metric-value" id="total-teams">-</div>
+                                <div class="metric-label">Total Teams</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value" id="total-groups">-</div>
+                                <div class="metric-label">Total Groups</div>
+                            </div>
+                        </div>
+                        <div class="warning">
+                            <h4><i class="fas fa-exclamation-triangle"></i> Teams Private Chat Costs</h4>
+                            <p><strong>Cost per message:</strong> <span id="teams-cost-per-message">-</span></p>
+                            <p><strong>Cost per million messages:</strong> <span id="teams-cost-per-million">-</span></p>
+                            <p>Consider this additional cost when planning Teams private chat protection.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level 3: Top 5 Analysis -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-trophy card-icon"></i>
+                    <h2 class="card-title">Top 5 by Size</h2>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4>📧 Top 5 Mailboxes</h4>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="top5-mailboxes-chart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>📁 Top 5 OneDrive</h4>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="top5-onedrive-chart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>🌐 Top 5 SharePoint</h4>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="top5-sharepoint-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level 4: Cost Estimation -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-dollar-sign card-icon"></i>
+                    <h2 class="card-title">Cost Estimation</h2>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div class="metric-value" id="monthly-storage-cost">-</div>
+                        <div class="metric-label">Monthly Storage</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="monthly-user-cost">-</div>
+                        <div class="metric-label">Monthly Users</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="total-monthly-cost">-</div>
+                        <div class="metric-label">Total Monthly</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="annual-cost">-</div>
+                        <div class="metric-label">Annual Cost</div>
+                    </div>
+                </div>
+                <div class="info">
+                    <h4><i class="fas fa-info-circle"></i> Cost Estimation Assumptions</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li><strong>Storage Cost:</strong> $0.02 per GB per month</li>
+                        <li><strong>Compression Rate:</strong> 40% (data compression)</li>
+                        <li><strong>Growth Rate:</strong> 20% (annual projection)</li>
+                        <li><strong>Worker Node Cost:</strong> $8 per TB per month</li>
+                        <li><strong>Retention Period:</strong> 1 year</li>
+                        <li><strong>Daily Change Rate:</strong> 0.2%</li>
+                    </ul>
+                </div>
+            </div>
+
+
+
+
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-download card-icon"></i>
+                    <h2 class="card-title">Export Options</h2>
+                </div>
+                <div style="text-align: center;">
+                    <button class="btn" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf"></i> Export to PDF
+                    </button>
+                    <button class="btn btn-success" onclick="viewDetailedReport()">
+                        <i class="fas fa-chart-bar"></i> View Detailed Report
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -204,5 +609,9 @@
     <div class="footer">
         <p>Powered by HYCU M365 Sizing Tool v1.0 | For backup planning and capacity management</p>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>
