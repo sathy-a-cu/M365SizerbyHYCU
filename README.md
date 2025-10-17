@@ -353,7 +353,7 @@ Example: 100 GB → 60 GB (compressed) → 72 GB (with growth)
 
 **Worker Node Calculation:**
 ```
-Worker Node Cost = (Tenant Size in TB) × $8 per TB per month
+Worker Node Cost = (Tenant Size in TB) × $5 per TB per month
 $5-$8 is the typical range. Sizer takes the conservative route. 
 ```
 

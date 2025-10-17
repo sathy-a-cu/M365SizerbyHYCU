@@ -891,7 +891,7 @@ function Get-CostAnalysis {
         $annualStorageCost = $monthlyStorageCost * 12
         
         # Worker node cost calculation based on pre-compression tenant size
-        $costPerTBPerMonth = 8   # $8 per TB per month
+        $costPerTBPerMonth = 5   # $5 per TB per month
         $tenantSizeTB = $currentStorageGB / 1024  # Convert GB to TB
         
         $monthlyWorkerNodeCost = $tenantSizeTB * $costPerTBPerMonth
